@@ -1,0 +1,44 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- App background with rounded corners -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGradient)"/>
+
+  <!-- Subtle inner glow -->
+  <rect width="512" height="512" rx="112" fill="url(#innerGlow)" opacity="0.4"/>
+
+  <!-- Clipboard body -->
+  <rect x="136" y="148" width="240" height="288" rx="20" fill="white" opacity="0.15"/>
+  <rect x="136" y="148" width="240" height="288" rx="20" stroke="white" stroke-width="6" stroke-opacity="0.4"/>
+
+  <!-- Clipboard clip at top -->
+  <rect x="208" y="124" width="96" height="48" rx="12" fill="white" opacity="0.25"/>
+  <rect x="208" y="124" width="96" height="48" rx="12" stroke="white" stroke-width="5" stroke-opacity="0.5"/>
+  <!-- Clip hole -->
+  <rect x="232" y="136" width="48" height="24" rx="8" fill="url(#bgGradient)"/>
+
+  <!-- Text lines on clipboard -->
+  <rect x="172" y="224" width="100" height="10" rx="5" fill="white" opacity="0.35"/>
+  <rect x="172" y="248" width="168" height="10" rx="5" fill="white" opacity="0.25"/>
+  <rect x="172" y="272" width="140" height="10" rx="5" fill="white" opacity="0.25"/>
+  <rect x="172" y="296" width="80" height="10" rx="5" fill="white" opacity="0.2"/>
+
+  <!-- Checkmark circle (success badge) -->
+  <circle cx="340" cy="340" r="72" fill="url(#checkGradient)"/>
+  <circle cx="340" cy="340" r="72" fill="white" opacity="0.1"/>
+  <!-- Checkmark -->
+  <path d="M308 340 L328 362 L374 316" stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+    <radialGradient id="innerGlow" cx="30%" cy="20%" r="70%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#4F46E5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="checkGradient" x1="268" y1="268" x2="412" y2="412" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+</svg>

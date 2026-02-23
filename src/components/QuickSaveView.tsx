@@ -1,0 +1,311 @@
+import { useState, useEffect, useRef } from 'react'
+import { Settings, X, ChevronDown, Check, CircleAlert } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { DestinationPicker } from './DestinationPicker'
+import { SettingsPanel } from './SettingsPanel'
+import { CreateNewPage } from './CreateNewPage'
+import { ClipFlowLogo } from './ClipFlowLogo'
+
+interface QuickSaveViewProps {
+  position: { x: number; y: number }
+  onClose: () => void
+  initialState?: 'default' | 'loading' | 'success' | 'error' | 'picker' | 'create' | 'settings'
+  clipboardContent?: string
+  sourceUrl?: string
+  onPositionChange?: (position: { x: number; y: number }) => void
+  theme?: 'dark' | 'light'
+  onThemeChange?: (theme: 'dark' | 'light') => void
+  autoDismiss?: boolean
+  dismissTimer?: number
+  onAutoDismissChange?: (enabled: boolean) => void
+  onDismissTimerChange?: (seconds: number) => void
+  defaultDestination?: { id: string; emoji: string; name: string } | null
+  preview?: boolean
+}
+
+type ViewState = 'quick-save' | 'destination-picker' | 'settings' | 'create-page'
+type SaveState = 'idle' | 'loading' | 'success' | 'error'
+
+function getDirection(from: ViewState, to: ViewState): number {
+  const order: ViewState[] = ['quick-save', 'destination-picker', 'create-page', 'settings']
+  return order.indexOf(to) >= order.indexOf(from) ? 1 : -1
+}
+
+export function QuickSaveView({
+  position,
+  onClose,
+  initialState,
+  clipboardContent,
+  sourceUrl = '',
+  onPositionChange,
+  theme = 'dark',
+  onThemeChange,
+  autoDismiss,
+  dismissTimer,
+  onAutoDismissChange,
+  onDismissTimerChange,
+  defaultDestination,
+  preview,
+}: QuickSaveViewProps) {
+  const [currentView, setCurrentView] = useState<ViewState>(
+    initialState === 'picker' ? 'destination-picker'
+    : initialState === 'create' ? 'create-page'
+    : initialState === 'settings' ? 'settings'
+    : 'quick-save'
+  )
+  const [saveState, setSaveState] = useState<SaveState>(
+    initialState === 'loading' ? 'loading'
+    : initialState === 'success' ? 'success'
+    : initialState === 'error' ? 'error'
+    : 'idle'
+  )
+  const [selectedDestination, setSelectedDestination] = useState(
+    defaultDestination ?? { emoji: '📝', name: 'Choose a page', id: '' }
+  )
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [lastInteraction, setLastInteraction] = useState(Date.now())
+  const [direction, setDirection] = useState(1)
+  const prevView = useRef(currentView)
+
+  const navigateTo = (view: ViewState) => {
+    setDirection(getDirection(currentView, view))
+    prevView.current = currentView
+    setCurrentView(view)
+  }
+
+  useEffect(() => {
+    if (!autoDismiss || !dismissTimer || currentView !== 'quick-save' || saveState !== 'idle') return
+    const timerId = setTimeout(() => onClose(), dismissTimer * 1000)
+    return () => clearTimeout(timerId)
+  }, [autoDismiss, dismissTimer, currentView, saveState, onClose, lastInteraction])
+
+  const handleInteraction = () => setLastInteraction(Date.now())
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement
+    if (target.closest('button')) return
+    handleInteraction()
+    setIsDragging(true)
+    setDragOffset({ x: e.clientX - position.x, y: e.clientY - position.y })
+  }
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return
+      onPositionChange?.({ x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y })
+    }
+    const handleMouseUp = () => setIsDragging(false)
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isDragging, dragOffset, onPositionChange])
+
+  const handleSave = async () => {
+    setSaveState('loading')
+    try {
+      const result = await chrome.runtime.sendMessage({
+        type: 'SAVE_TO_NOTION',
+        text: clipboardContent || '',
+        destinationId: selectedDestination.id,
+        destinationName: selectedDestination.name,
+        destinationEmoji: selectedDestination.emoji,
+        sourceUrl,
+      }) as { type: 'SAVE_RESULT'; success: boolean; error?: string }
+
+      if (result?.success) {
+        setSaveState('success')
+        if (autoDismiss && dismissTimer) {
+          setTimeout(() => onClose(), dismissTimer * 1000)
+        }
+      } else {
+        setSaveState('error')
+      }
+    } catch {
+      setSaveState('error')
+    }
+  }
+
+  const handleDestinationSelect = (destination: { id: string; emoji: string; name: string }) => {
+    setSelectedDestination(destination)
+    navigateTo('quick-save')
+  }
+
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
+  }
+
+  const isDark = theme !== 'light'
+
+  const renderContent = () => {
+    const viewContent: Record<ViewState, React.ReactNode> = {
+      'destination-picker': (
+        <DestinationPicker
+          onBack={() => navigateTo('quick-save')}
+          onSelect={handleDestinationSelect}
+          onCreateNew={() => navigateTo('create-page')}
+          theme={theme}
+        />
+      ),
+      'settings': (
+        <SettingsPanel
+          onBack={() => navigateTo('quick-save')}
+          theme={theme}
+          onThemeChange={onThemeChange}
+          autoDismiss={autoDismiss}
+          dismissTimer={dismissTimer}
+          onAutoDismissChange={onAutoDismissChange}
+          onDismissTimerChange={onDismissTimerChange}
+        />
+      ),
+      'create-page': (
+        <CreateNewPage
+          onBack={() => navigateTo('destination-picker')}
+          onCreate={(page) => {
+            setSelectedDestination(page)
+            navigateTo('quick-save')
+          }}
+          theme={theme}
+        />
+      ),
+      'quick-save': (
+        <>
+          {/* Header */}
+          <div
+            className={`flex items-center justify-between h-11 px-4 border-b cursor-move ${isDark ? 'border-white/10' : 'border-black/10'}`}
+            onMouseDown={handleMouseDown}
+          >
+            <div className="flex items-center gap-2">
+              <ClipFlowLogo size={16} />
+              <span className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>ClipFlow</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => navigateTo('settings')}
+                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
+              >
+                <Settings className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+              <button
+                onClick={onClose}
+                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
+              >
+                <X className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Clipboard Preview */}
+          <div className="p-4">
+            <div className={`rounded-lg p-3 max-h-[120px] overflow-y-auto ${isDark ? 'bg-[#2A2A2A]/90' : 'bg-gray-100'}`}>
+              <pre className={`font-mono text-xs whitespace-pre-wrap ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                {clipboardContent || 'No content'}
+              </pre>
+            </div>
+          </div>
+
+          {/* Destination */}
+          <div className="px-4 pb-4">
+            <button
+              onClick={() => { handleInteraction(); navigateTo('destination-picker') }}
+              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#2A2A2A]/50 hover:bg-[#3A3A3A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{selectedDestination.emoji}</span>
+                <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>{selectedDestination.name}</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+            </button>
+          </div>
+
+          {/* Save Button */}
+          <div className="px-4 pb-4">
+            <AnimatePresence mode="wait">
+              {saveState === 'success' ? (
+                <motion.div
+                  key="success"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="h-10 bg-green-500 rounded-lg flex items-center justify-center gap-2 text-white font-semibold"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.1 }}
+                  >
+                    <Check className="w-5 h-5" />
+                  </motion.div>
+                  <span>Saved!</span>
+                </motion.div>
+              ) : saveState === 'error' ? (
+                <motion.div key="error" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+                  <div className="h-10 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center justify-center gap-2 text-red-400 text-sm">
+                    <CircleAlert className="w-4 h-4" />
+                    <span>Failed to save</span>
+                  </div>
+                  <button
+                    onClick={() => { handleInteraction(); handleSave() }}
+                    className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] text-white font-semibold rounded-lg transition-all"
+                  >
+                    Retry
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="save"
+                  onClick={() => { handleInteraction(); handleSave() }}
+                  disabled={saveState === 'loading'}
+                  className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 text-white font-semibold rounded-lg transition-all flex items-center justify-center"
+                  whileTap={{ scale: 0.97 }}
+                >
+                  {saveState === 'loading' ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : 'Save'}
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        </>
+      ),
+    }
+
+    return (
+      <AnimatePresence mode="wait" custom={direction}>
+        <motion.div
+          key={currentView}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
+          {viewContent[currentView]}
+        </motion.div>
+      </AnimatePresence>
+    )
+  }
+
+  return (
+    <div
+      className={preview ? 'relative' : 'fixed z-[2147483647] animate-in fade-in zoom-in-95 duration-150'}
+      style={preview ? undefined : { left: `${position.x}px`, top: `${position.y}px` }}
+    >
+      <div
+        className={`w-[360px] backdrop-blur-[20px] border rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden ${
+          isDark ? 'bg-[#1A1A1A]/85 border-white/10' : 'bg-white/90 border-black/10'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {renderContent()}
+      </div>
+    </div>
+  )
+}

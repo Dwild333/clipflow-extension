@@ -1,0 +1,64 @@
+{
+  "name": "clipflow",
+  "displayName": "ClipFlow",
+  "version": "1.0.0",
+  "description": "Save clipboard text to Notion in 2 clicks — no tab switching.",
+  "author": "ClipFlow",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "package": "plasmo package"
+  },
+  "dependencies": {
+    "plasmo": "0.90.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "lucide-react": "0.487.0",
+    "motion": "12.23.24",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.2.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.0.258",
+    "@types/node": "20.11.5",
+    "@types/react": "18.3.1",
+    "@types/react-dom": "18.3.1",
+    "typescript": "5.3.3",
+    "tailwindcss": "3.4.17",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.5.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "esbuild",
+      "lmdb",
+      "msgpackr-extract",
+      "sharp"
+    ]
+  },
+  "manifest": {
+    "permissions": [
+      "storage",
+      "activeTab",
+      "clipboardRead",
+      "identity",
+      "scripting"
+    ],
+    "host_permissions": [
+      "https://api.notion.com/*",
+      "https://*/*",
+      "http://*/*"
+    ],
+    "commands": {
+      "_execute_action": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+N",
+          "mac": "Command+Shift+N"
+        },
+        "description": "Open ClipFlow widget"
+      }
+    }
+  }
+}
