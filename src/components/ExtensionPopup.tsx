@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun } from 'lucide-react'
+import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun, Crown, CreditCard } from 'lucide-react'
 import { ClipFlowLogo } from './ClipFlowLogo'
 import { PageIcon } from './PageIcon'
 
@@ -22,7 +22,6 @@ interface ExtensionPopupProps {
   onThemeChange?: (theme: 'dark' | 'light') => void
   onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime', value: boolean) => void
   onDismissTimerChange?: (value: number) => void
-  onUpgrade?: () => void
   onDisconnect?: () => void
   onReconnect?: () => void
 }
@@ -67,7 +66,6 @@ export function ExtensionPopup({
   onThemeChange,
   onSettingToggle,
   onDismissTimerChange,
-  onUpgrade,
   onDisconnect,
   onReconnect,
 }: ExtensionPopupProps) {
@@ -107,6 +105,7 @@ export function ExtensionPopup({
       <div className={`w-[320px] rounded-2xl border overflow-hidden ${isDark ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-black/10'}`}>
         <SettingsView
           theme={theme}
+          isPro={isPro}
           workspaceName={workspaceName}
           autoDismiss={autoDismiss}
           dismissTimer={dismissTimer}
@@ -257,11 +256,18 @@ export function ExtensionPopup({
             )}
           </div>
 
-          {/* Upgrade CTA (Free tier only) */}
-          {!isPro && (
-            <div className="mx-4 mt-3">
-              <button
-                onClick={onUpgrade}
+          {/* Upgrade CTA (Free) / Pro status banner */}
+          <div className="mx-4 mt-3">
+            {isPro ? (
+              <div className={`w-full px-3 py-2.5 rounded-xl flex items-center gap-2 ${isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'}`}>
+                <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="text-xs text-amber-400 font-medium">Pro plan — unlimited saves</span>
+              </div>
+            ) : (
+              <a
+                href="https://clipflow.tools/upgrade"
+                target="_blank"
+                rel="noreferrer"
                 className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between transition-colors ${isDark ? 'bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20' : 'bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'}`}
               >
                 <div className="flex items-center gap-2">
@@ -269,17 +275,22 @@ export function ExtensionPopup({
                   <span className="text-xs text-indigo-400">Upgrade to Pro — unlimited saves</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />
-              </button>
-            </div>
-          )}
+              </a>
+            )}
+          </div>
 
           {/* Footer */}
           <div className={`mt-4 px-4 py-2.5 flex items-center justify-between border-t ${isDark ? 'border-white/5' : 'border-black/5'}`}>
             <span className="text-[10px] text-gray-600">v1.0.0</span>
-            <button className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-400 transition-colors">
+            <a
+              href="https://clipflow.tools/support"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-400 transition-colors"
+            >
               <span>Help & Feedback</span>
               <ExternalLink className="w-2.5 h-2.5" />
-            </button>
+            </a>
           </div>
         </>
       )}
@@ -291,6 +302,7 @@ export function ExtensionPopup({
 
 interface SettingsViewProps {
   theme?: 'dark' | 'light'
+  isPro?: boolean
   workspaceName?: string | null
   autoDismiss?: boolean
   dismissTimer?: number
@@ -328,6 +340,7 @@ function SettingsRow({ label, desc, isDark, children }: { label: string; desc: s
 
 function SettingsView({
   theme = 'dark',
+  isPro = false,
   workspaceName,
   autoDismiss = false,
   dismissTimer = 5,
@@ -407,6 +420,51 @@ function SettingsView({
                 />
               </div>
             )}
+          </section>
+
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+          {/* Subscription */}
+          <section>
+            <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-3">Subscription</div>
+            <div className={`rounded-lg p-3 ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-100'}`}>
+              {isPro ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Pro Plan</div>
+                      <div className="text-gray-500 text-xs">Unlimited saves</div>
+                    </div>
+                  </div>
+                  <a
+                    href="https://clipflow.tools/billing"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
+                  >
+                    <CreditCard className="w-3 h-3" />
+                    <span>Manage</span>
+                  </a>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Free Plan</div>
+                    <div className="text-gray-500 text-xs">10 saves / day</div>
+                  </div>
+                  <a
+                    href="https://clipflow.tools/upgrade"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
+                  >
+                    <Zap className="w-3 h-3" />
+                    <span>Upgrade</span>
+                  </a>
+                </div>
+              )}
+            </div>
           </section>
 
           <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
