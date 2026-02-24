@@ -16,9 +16,12 @@ interface SettingsPanelProps {
   onIncludeDateTimeChange?: (v: boolean) => void
 }
 
+const HISTORY_PREVIEW = 10
+
 interface SaveRecord {
   id: string
   textPreview: string
+  destinationId: string
   destinationName: string
   destinationEmoji: string
   savedAt: string
@@ -64,6 +67,7 @@ export function SettingsPanel({
   const [showManagePages, setShowManagePages] = useState(false)
   const [history, setHistory] = useState<SaveRecord[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [showAllHistory, setShowAllHistory] = useState(false)
   const isDark = theme !== 'light'
 
   // Load real Notion pages when manage section opens
@@ -162,60 +166,49 @@ export function SettingsPanel({
 
         <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
 
-        {/* ── Manage Save Destinations ── */}
-        <section>
-          <button
-            onClick={() => setShowManagePages(v => !v)}
-            className={`w-full flex items-center justify-between text-[10px] uppercase tracking-wider text-gray-500 mb-2`}
-          >
-            <span>Manage Save Destinations</span>
-            {showManagePages ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-          {showManagePages && (
-            <div className={`rounded-lg overflow-hidden border ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-              {pagesLoading ? (
-                <div className="flex justify-center py-6">
-                  <div className={`w-5 h-5 border-2 rounded-full animate-spin ${isDark ? 'border-gray-600 border-t-white' : 'border-gray-300 border-t-black'}`} />
-                </div>
-              ) : notionPages.length === 0 ? (
-                <div className="py-4 text-center text-xs text-gray-500">No pages found in your workspace</div>
-              ) : notionPages.map((page, i) => (
-                <div
-                  key={page.id}
-                  className={`h-9 px-3 flex items-center gap-2 ${i > 0 ? isDark ? 'border-t border-white/5' : 'border-t border-black/5' : ''} ${isDark ? 'bg-[#2A2A2A]/50' : 'bg-gray-50'}`}
-                >
-                  <span className="text-base">{page.emoji}</span>
-                  <span className={`text-sm truncate ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
-
         {/* ── Save History ── */}
         <section>
-          <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">
-            Save History ({history.length})
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">
+              Save History ({history.length})
+            </div>
+            {history.length > HISTORY_PREVIEW && (
+              <button
+                onClick={() => setShowAllHistory(v => !v)}
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                {showAllHistory ? 'Show less' : `View all ${history.length}`}
+              </button>
+            )}
           </div>
           {history.length === 0 ? (
             <div className="text-xs text-gray-500 py-2">No saves yet</div>
           ) : (
             <div className={`rounded-lg overflow-hidden border ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-              {history.map((item, i) => (
+              {(showAllHistory ? history : history.slice(0, HISTORY_PREVIEW)).map((item, i) => (
                 <div key={item.id} className={i > 0 ? isDark ? 'border-t border-white/5' : 'border-t border-black/5' : ''}>
                   <button
                     onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                     className={`w-full px-3 py-2 flex items-start gap-2 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}
                   >
-                    <span className="text-sm mt-0.5 shrink-0">{item.destinationEmoji}</span>
+                    <span className="text-base mt-0.5 shrink-0 leading-none">
+                      {item.destinationEmoji && item.destinationEmoji !== '📄' ? item.destinationEmoji : '📄'}
+                    </span>
                     <div className="flex-1 min-w-0">
                       <div className={`text-xs ${expandedId === item.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                         {item.textPreview}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[10px] text-gray-500">{item.destinationName}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <a
+                          href={`https://notion.so/${item.destinationId?.replace(/-/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors"
+                        >
+                          {item.destinationName}
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
                         <span className="text-[10px] text-gray-600">·</span>
                         <span className="text-[10px] text-gray-600">{timeAgo(item.savedAt)}</span>
                         {item.sourceUrl && (
@@ -226,7 +219,7 @@ export function SettingsPanel({
                               target="_blank"
                               rel="noreferrer"
                               onClick={e => e.stopPropagation()}
-                              className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5"
+                              className="text-[10px] text-gray-500 hover:text-gray-400 flex items-center gap-0.5 transition-colors"
                             >
                               source <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -234,7 +227,7 @@ export function SettingsPanel({
                         )}
                       </div>
                     </div>
-                    <span className={`text-[10px] text-gray-600 shrink-0 mt-0.5`}>
+                    <span className="text-[10px] text-gray-600 shrink-0 mt-0.5">
                       {expandedId === item.id ? '▲' : '▼'}
                     </span>
                   </button>

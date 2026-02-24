@@ -76,6 +76,7 @@ export function QuickSaveView({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [lastInteraction, setLastInteraction] = useState(Date.now())
   const [direction, setDirection] = useState(1)
+  const [userHasDragged, setUserHasDragged] = useState(false)
   const prevView = useRef(currentView)
 
   const navigateTo = (view: ViewState) => {
@@ -85,10 +86,10 @@ export function QuickSaveView({
   }
 
   useEffect(() => {
-    if (!autoDismiss || !dismissTimer || currentView !== 'quick-save' || saveState !== 'idle') return
+    if (!autoDismiss || !dismissTimer || currentView !== 'quick-save' || saveState !== 'idle' || userHasDragged) return
     const timerId = setTimeout(() => onClose(), dismissTimer * 1000)
     return () => clearTimeout(timerId)
-  }, [autoDismiss, dismissTimer, currentView, saveState, onClose, lastInteraction])
+  }, [autoDismiss, dismissTimer, currentView, saveState, onClose, lastInteraction, userHasDragged])
 
   const handleInteraction = () => setLastInteraction(Date.now())
 
@@ -100,6 +101,7 @@ export function QuickSaveView({
     if (target.closest('button')) return
     handleInteraction()
     setIsDragging(true)
+    setUserHasDragged(true)
     onDragStateChange?.(true)
     setDragOffset({ x: e.clientX - position.x, y: e.clientY - position.y })
   }

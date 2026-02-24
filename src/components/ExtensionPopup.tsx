@@ -30,6 +30,7 @@ interface RecentSave {
   id: string
   preview: string
   destination: string
+  destinationId: string
   destinationEmoji: string
   timeAgo: string
 }
@@ -74,12 +75,13 @@ export function ExtensionPopup({
 
   useEffect(() => {
     chrome.storage.local.get('recentSaves').then((result) => {
-      const raw = result.recentSaves as Array<{ id: string; textPreview: string; destinationName: string; destinationEmoji: string; savedAt: string }> | undefined
+      const raw = result.recentSaves as Array<{ id: string; textPreview: string; destinationId: string; destinationName: string; destinationEmoji: string; savedAt: string }> | undefined
       if (!raw?.length) return
       setRecentSaves(raw.slice(0, 5).map(s => ({
         id: s.id,
         preview: s.textPreview,
         destination: s.destinationName,
+        destinationId: s.destinationId,
         destinationEmoji: s.destinationEmoji,
         timeAgo: timeAgo(s.savedAt),
       })))
@@ -213,8 +215,17 @@ export function ExtensionPopup({
                     <div className={`text-xs ${expandedId === save.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       {save.preview}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-indigo-400">{save.destination}</span>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <a
+                        href={`https://notion.so/${save.destinationId?.replace(/-/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors"
+                      >
+                        {save.destination}
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
                       <span className="text-[10px] text-gray-600">·</span>
                       <span className="text-[10px] text-gray-600">{save.timeAgo}</span>
                     </div>

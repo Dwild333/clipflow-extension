@@ -32,6 +32,21 @@ export async function searchNotionPages(query: string = ""): Promise<NotionPage[
   return data.results.map(pageFromAPI)
 }
 
+const NOTION_CHUNK_SIZE = 1990 // Notion rich_text max is 2000 chars per element
+
+/** Split text into ≤2000-char paragraph blocks */
+function textToBlocks(text: string): object[] {
+  const chunks: string[] = []
+  for (let i = 0; i < text.length; i += NOTION_CHUNK_SIZE) {
+    chunks.push(text.slice(i, i + NOTION_CHUNK_SIZE))
+  }
+  return chunks.map((chunk) => ({
+    object: "block",
+    type: "paragraph",
+    paragraph: { rich_text: [{ type: "text", text: { content: chunk } }] },
+  }))
+}
+
 /** Append a text block (+ optional metadata) to a Notion page */
 export async function appendTextToPage(
   pageId: string,
@@ -40,15 +55,7 @@ export async function appendTextToPage(
 ): Promise<void> {
   const headers = await notionHeaders()
 
-  const children: object[] = [
-    {
-      object: "block",
-      type: "paragraph",
-      paragraph: {
-        rich_text: [{ type: "text", text: { content: text } }],
-      },
-    },
-  ]
+  const children: object[] = textToBlocks(text)
 
   // Optional metadata lines
   const metaParts: string[] = []
