@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Settings, X, ChevronDown, Check, CircleAlert } from 'lucide-react'
+import { Settings, X, ChevronDown, Check, CircleAlert, Zap } from 'lucide-react'
 import { PageIcon } from './PageIcon'
 import { motion, AnimatePresence } from 'motion/react'
 import { DestinationPicker } from './DestinationPicker'
@@ -70,6 +70,7 @@ export function QuickSaveView({
     : initialState === 'error' ? 'error'
     : 'idle'
   )
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [selectedDestination, setSelectedDestination] = useState<{ id: string; emoji: string; iconUrl?: string; name: string }>(
     defaultDestination ?? { emoji: '📝', name: 'Choose a page', id: '' }
   )
@@ -133,6 +134,7 @@ export function QuickSaveView({
 
   const handleSave = async () => {
     setSaveState('loading')
+    setSaveError(null)
     try {
       const result = await chrome.runtime.sendMessage({
         type: 'SAVE_TO_NOTION',
@@ -150,6 +152,7 @@ export function QuickSaveView({
           setTimeout(() => onClose(), dismissTimer * 1000)
         }
       } else {
+        setSaveError(result?.error ?? null)
         setSaveState('error')
       }
     } catch {
@@ -251,16 +254,36 @@ export function QuickSaveView({
                 </motion.div>
               ) : saveState === 'error' ? (
                 <motion.div key="error" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-                  <div className="h-10 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center justify-center gap-2 text-red-400 text-sm">
-                    <CircleAlert className="w-4 h-4" />
-                    <span>Failed to save</span>
-                  </div>
-                  <button
-                    onClick={() => { handleInteraction(); handleSave() }}
-                    className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] text-white font-semibold rounded-lg transition-all"
-                  >
-                    Retry
-                  </button>
+                  {saveError?.toLowerCase().includes('limit') ? (
+                    <>
+                      <div className={`px-3 py-2.5 rounded-lg border text-center ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+                        <div className="text-sm font-medium text-amber-400 mb-0.5">Daily limit reached</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>You've used all 10 free saves today. Resets at midnight.</div>
+                      </div>
+                      <a
+                        href="https://clipflow.tools/upgrade"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Upgrade for unlimited saves
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <div className="h-10 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center justify-center gap-2 text-red-400 text-sm">
+                        <CircleAlert className="w-4 h-4" />
+                        <span>Failed to save — try again</span>
+                      </div>
+                      <button
+                        onClick={() => { handleInteraction(); handleSave() }}
+                        className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] text-white font-semibold rounded-lg transition-all"
+                      >
+                        Retry
+                      </button>
+                    </>
+                  )}
                 </motion.div>
               ) : (
                 <motion.button

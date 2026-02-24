@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun, Crown, CreditCard } from 'lucide-react'
+import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun, Crown, CreditCard, Trash2 } from 'lucide-react'
 import { ClipFlowLogo } from './ClipFlowLogo'
 import { PageIcon } from './PageIcon'
 
@@ -72,6 +72,7 @@ export function ExtensionPopup({
   const [enabled, setEnabled] = useState(widgetEnabled)
   const [recentSaves, setRecentSaves] = useState<RecentSave[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const isDark = theme !== 'light'
 
   useEffect(() => {
@@ -95,6 +96,16 @@ export function ExtensionPopup({
     const newVal = !enabled
     setEnabled(newVal)
     onToggleWidget?.(newVal)
+  }
+
+  const handleDeleteSave = async (id: string) => {
+    const raw = await chrome.storage.local.get('recentSaves')
+    const all = (raw.recentSaves as Array<{ id: string }> | undefined) ?? []
+    const updated = all.filter(s => s.id !== id)
+    await chrome.storage.local.set({ recentSaves: updated })
+    setRecentSaves(prev => prev.filter(s => s.id !== id))
+    setConfirmDeleteId(null)
+    setExpandedId(null)
   }
 
   const savesRemaining = dailyLimit - savesToday
@@ -209,48 +220,78 @@ export function ExtensionPopup({
             ) : (
             <div className={`mx-2 rounded-xl overflow-hidden ${isDark ? 'bg-[#2A2A2A]/50' : 'bg-gray-50'}`}>
               {recentSaves.map((save, index) => (
-                <button
-                  key={save.id}
-                  onClick={() => setExpandedId(expandedId === save.id ? null : save.id)}
-                  className={`w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'} ${index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}`}
-                >
-                  <div className="mt-0.5 shrink-0">
-                    <PageIcon emoji={save.destinationEmoji} iconUrl={save.destinationIconUrl} size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-xs ${expandedId === save.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {save.preview}
+                <div key={save.id} className={index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}>
+                  <button
+                    onClick={() => { setExpandedId(expandedId === save.id ? null : save.id); setConfirmDeleteId(null) }}
+                    className={`w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'}`}
+                  >
+                    <div className="mt-0.5 shrink-0">
+                      <PageIcon emoji={save.destinationEmoji} iconUrl={save.destinationIconUrl} size={16} />
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <a
-                        href={`https://notion.so/${save.destinationId?.replace(/-/g, '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors shrink-0"
-                      >
-                        {save.destination}
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                      {save.sourceUrl && (
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${expandedId === save.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {save.preview}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <a
+                          href={`https://notion.so/${save.destinationId?.replace(/-/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors shrink-0"
+                        >
+                          {save.destination}
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                        {save.sourceUrl && (
+                          <>
+                            <span className="text-[10px] text-gray-600">·</span>
+                            <a
+                              href={save.sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="text-[10px] text-gray-500 hover:text-gray-400 flex items-center gap-0.5 transition-colors shrink-0"
+                            >
+                              source <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </>
+                        )}
+                        <span className="text-[10px] text-gray-400 ml-auto shrink-0">{save.timeAgo}</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-gray-600 shrink-0 mt-0.5">{expandedId === save.id ? '▲' : '▼'}</span>
+                  </button>
+                  {expandedId === save.id && (
+                    <div className="px-3 pb-2 flex items-center justify-end gap-2">
+                      {confirmDeleteId === save.id ? (
                         <>
-                          <span className="text-[10px] text-gray-600">·</span>
-                          <a
-                            href={save.sourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="text-[10px] text-gray-500 hover:text-gray-400 flex items-center gap-0.5 transition-colors shrink-0"
+                          <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Delete this entry?</span>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className={`px-2 py-0.5 text-[10px] rounded transition-colors ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-black hover:bg-black/5'}`}
                           >
-                            source <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSave(save.id)}
+                            className="px-2 py-0.5 text-[10px] rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                          >
+                            Yes, delete
+                          </button>
                         </>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(save.id)}
+                          className={`flex items-center gap-1 px-2 py-0.5 text-[10px] rounded transition-colors ${isDark ? 'text-gray-600 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
+                        </button>
                       )}
-                      <span className="text-[10px] text-gray-400 ml-auto shrink-0">{save.timeAgo}</span>
                     </div>
-                  </div>
-                  <span className="text-[10px] text-gray-600 shrink-0 mt-0.5">{expandedId === save.id ? '▲' : '▼'}</span>
-                </button>
+                  )}
+                </div>
               ))}
             </div>
             )}
