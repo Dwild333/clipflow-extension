@@ -147,7 +147,7 @@ export async function recordRecentSave(params: {
     savedAt: new Date().toISOString(),
     sourceUrl: params.sourceUrl,
   }
-  const updated = [newSave, ...existing].slice(0, 50)
+  const updated = [newSave, ...existing].slice(0, 25)
   await setStorage("recentSaves", updated)
 }
 

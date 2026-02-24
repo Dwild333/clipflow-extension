@@ -18,7 +18,7 @@ interface SettingsPanelProps {
   onIncludeDateTimeChange?: (v: boolean) => void
 }
 
-const HISTORY_PREVIEW = 10
+const HISTORY_PREVIEW = 5
 
 interface SaveRecord {
   id: string
@@ -285,7 +285,7 @@ export function SettingsPanel({
                 onClick={() => setShowAllHistory(v => !v)}
                 className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
               >
-                {showAllHistory ? 'Show less' : `View all ${history.length}`}
+                {showAllHistory ? `Show less` : `Show all ${history.length}`}
               </button>
             )}
           </div>
