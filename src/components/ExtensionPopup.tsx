@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink } from 'lucide-react'
+import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun } from 'lucide-react'
 import { ClipFlowLogo } from './ClipFlowLogo'
 
 interface ExtensionPopupProps {
@@ -11,10 +11,16 @@ interface ExtensionPopupProps {
   widgetEnabled?: boolean
   workspaceName?: string | null
   showSettings?: boolean
+  autoDismiss?: boolean
+  dismissTimer?: number
+  includeSourceUrl?: boolean
+  includeDateTime?: boolean
   onToggleWidget?: (enabled: boolean) => void
   onOpenSettings?: () => void
   onCloseSettings?: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
+  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime', value: boolean) => void
+  onDismissTimerChange?: (value: number) => void
   onUpgrade?: () => void
   onDisconnect?: () => void
   onReconnect?: () => void
@@ -47,23 +53,30 @@ export function ExtensionPopup({
   widgetEnabled = true,
   workspaceName,
   showSettings = false,
+  autoDismiss = false,
+  dismissTimer = 5,
+  includeSourceUrl = false,
+  includeDateTime = false,
   onToggleWidget,
   onOpenSettings,
   onCloseSettings,
   onThemeChange,
+  onSettingToggle,
+  onDismissTimerChange,
   onUpgrade,
   onDisconnect,
   onReconnect,
 }: ExtensionPopupProps) {
   const [enabled, setEnabled] = useState(widgetEnabled)
   const [recentSaves, setRecentSaves] = useState<RecentSave[]>([])
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const isDark = theme !== 'light'
 
   useEffect(() => {
     chrome.storage.local.get('recentSaves').then((result) => {
       const raw = result.recentSaves as Array<{ id: string; textPreview: string; destinationName: string; destinationEmoji: string; savedAt: string }> | undefined
       if (!raw?.length) return
-      setRecentSaves(raw.slice(0, 3).map(s => ({
+      setRecentSaves(raw.slice(0, 5).map(s => ({
         id: s.id,
         preview: s.textPreview,
         destination: s.destinationName,
@@ -88,8 +101,14 @@ export function ExtensionPopup({
         <SettingsView
           theme={theme}
           workspaceName={workspaceName}
+          autoDismiss={autoDismiss}
+          dismissTimer={dismissTimer}
+          includeSourceUrl={includeSourceUrl}
+          includeDateTime={includeDateTime}
           onBack={onCloseSettings!}
           onThemeChange={onThemeChange}
+          onSettingToggle={onSettingToggle}
+          onDismissTimerChange={onDismissTimerChange}
           onDisconnect={onDisconnect}
         />
       </div>
@@ -184,20 +203,24 @@ export function ExtensionPopup({
             ) : (
             <div className={`mx-2 rounded-xl overflow-hidden ${isDark ? 'bg-[#2A2A2A]/50' : 'bg-gray-50'}`}>
               {recentSaves.map((save, index) => (
-                <div
+                <button
                   key={save.id}
-                  className={`px-3 py-2.5 flex items-start gap-2.5 transition-colors cursor-pointer ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'} ${index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}`}
+                  onClick={() => setExpandedId(expandedId === save.id ? null : save.id)}
+                  className={`w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'} ${index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}`}
                 >
-                  <span className="text-sm mt-0.5">{save.destinationEmoji}</span>
+                  <span className="text-sm mt-0.5 shrink-0">{save.destinationEmoji}</span>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{save.preview}</div>
+                    <div className={`text-xs ${expandedId === save.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {save.preview}
+                    </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-gray-500">{save.destination}</span>
+                      <span className="text-[10px] text-indigo-400">{save.destination}</span>
                       <span className="text-[10px] text-gray-600">·</span>
                       <span className="text-[10px] text-gray-600">{save.timeAgo}</span>
                     </div>
                   </div>
-                </div>
+                  <span className="text-[10px] text-gray-600 shrink-0 mt-0.5">{expandedId === save.id ? '▲' : '▼'}</span>
+                </button>
               ))}
             </div>
             )}
@@ -238,16 +261,57 @@ export function ExtensionPopup({
 interface SettingsViewProps {
   theme?: 'dark' | 'light'
   workspaceName?: string | null
+  autoDismiss?: boolean
+  dismissTimer?: number
+  includeSourceUrl?: boolean
+  includeDateTime?: boolean
   onBack: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
+  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime', value: boolean) => void
+  onDismissTimerChange?: (value: number) => void
   onDisconnect?: () => void
 }
 
-function SettingsView({ theme = 'dark', workspaceName, onBack, onThemeChange, onDisconnect }: SettingsViewProps) {
+function Toggle({ on, onToggle, isDark }: { on: boolean; onToggle: () => void; isDark: boolean }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${on ? 'bg-indigo-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}
+    >
+      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${on ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+    </button>
+  )
+}
+
+function SettingsRow({ label, desc, isDark, children }: { label: string; desc: string; isDark: boolean; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>{label}</div>
+        <div className="text-xs text-gray-500 mt-0.5">{desc}</div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function SettingsView({
+  theme = 'dark',
+  workspaceName,
+  autoDismiss = false,
+  dismissTimer = 5,
+  includeSourceUrl = false,
+  includeDateTime = false,
+  onBack,
+  onThemeChange,
+  onSettingToggle,
+  onDismissTimerChange,
+  onDisconnect,
+}: SettingsViewProps) {
   const isDark = theme !== 'light'
   return (
     <>
-      <div className={`px-4 py-3 flex items-center justify-between border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+      <div className={`px-4 py-3 flex items-center gap-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
         <button
           onClick={onBack}
           className={`flex items-center gap-2 text-sm font-semibold transition-colors ${isDark ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-700'}`}
@@ -256,37 +320,85 @@ function SettingsView({ theme = 'dark', workspaceName, onBack, onThemeChange, on
           <span>Settings</span>
         </button>
       </div>
-      <div className="p-4 space-y-5">
-        {/* Theme */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Theme</div>
-            <div className="text-xs text-gray-500 mt-0.5">Widget appearance</div>
-          </div>
-          <button
-            onClick={() => onThemeChange?.(theme === 'dark' ? 'light' : 'dark')}
-            className={`relative w-11 h-6 rounded-full transition-colors ${isDark ? 'bg-indigo-500' : 'bg-gray-400'}`}
-          >
-            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${isDark ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
-          </button>
-        </div>
-        {/* Connected Workspace */}
-        <div>
-          <div className="text-[11px] uppercase font-medium text-gray-600 mb-2">Connected Workspace</div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-100'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>{workspaceName || 'My Workspace'}</div>
-                <div className="text-gray-500 text-xs">Connected</div>
-              </div>
+
+      <div className="overflow-y-auto max-h-[480px]">
+        <div className="p-4 space-y-5">
+
+          {/* Appearance */}
+          <section>
+            <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-3">Appearance</div>
+            <SettingsRow label="Theme" desc={isDark ? 'Dark mode' : 'Light mode'} isDark={isDark}>
               <button
-                onClick={onDisconnect}
-                className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                onClick={() => onThemeChange?.(theme === 'dark' ? 'light' : 'dark')}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isDark ? 'bg-indigo-500' : 'bg-gray-300'}`}
               >
-                Disconnect
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform flex items-center justify-center ${isDark ? 'translate-x-[22px]' : 'translate-x-0.5'}`}>
+                  {isDark
+                    ? <Moon className="w-3 h-3 text-indigo-500" />
+                    : <Sun className="w-3 h-3 text-gray-500" />}
+                </div>
               </button>
+            </SettingsRow>
+          </section>
+
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+          {/* Save Options */}
+          <section className="space-y-4">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">Save Options</div>
+            <SettingsRow label="Include source URL" desc="Append page URL below saved text" isDark={isDark}>
+              <Toggle on={includeSourceUrl} onToggle={() => onSettingToggle?.('includeSourceUrl', !includeSourceUrl)} isDark={isDark} />
+            </SettingsRow>
+            <SettingsRow label="Include date & time" desc="Append timestamp below saved text" isDark={isDark}>
+              <Toggle on={includeDateTime} onToggle={() => onSettingToggle?.('includeDateTime', !includeDateTime)} isDark={isDark} />
+            </SettingsRow>
+          </section>
+
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+          {/* Behaviour */}
+          <section className="space-y-3">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">Behaviour</div>
+            <SettingsRow label="Auto-dismiss" desc="Close widget after inactivity" isDark={isDark}>
+              <Toggle on={autoDismiss} onToggle={() => onSettingToggle?.('autoDismiss', !autoDismiss)} isDark={isDark} />
+            </SettingsRow>
+            {autoDismiss && (
+              <div>
+                <div className="text-xs text-gray-500 mb-2">Dismiss after {dismissTimer}s</div>
+                <input
+                  type="range" min="3" max="30" value={dismissTimer}
+                  onChange={(e) => onDismissTimerChange?.(Number(e.target.value))}
+                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4
+                    [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full
+                    [&::-webkit-slider-thumb]:bg-indigo-500
+                    ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-200'}`}
+                />
+              </div>
+            )}
+          </section>
+
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+          {/* Connected Workspace */}
+          <section>
+            <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-3">Connected Workspace</div>
+            <div className={`rounded-lg p-3 ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-100'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>{workspaceName || 'My Workspace'}</div>
+                  <div className="text-gray-500 text-xs">Connected</div>
+                </div>
+                <button
+                  onClick={onDisconnect}
+                  className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
             </div>
-          </div>
+          </section>
+
         </div>
       </div>
     </>

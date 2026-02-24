@@ -10,6 +10,10 @@ function IndexPopup() {
   const [savesToday, setSavesToday] = useState(0)
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [widgetEnabled, setWidgetEnabled] = useState(true)
+  const [autoDismiss, setAutoDismiss] = useState(false)
+  const [dismissTimer, setDismissTimer] = useState(5)
+  const [includeSourceUrl, setIncludeSourceUrl] = useState(false)
+  const [includeDateTime, setIncludeDateTime] = useState(false)
   const [loading, setLoading] = useState(true)
   const [workspaceName, setWorkspaceName] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -29,6 +33,10 @@ function IndexPopup() {
     setIsPro(subscription?.isPro ?? false)
     setTheme(settings.theme)
     setWidgetEnabled(settings.widgetEnabled)
+    setAutoDismiss(settings.autoDismiss ?? false)
+    setDismissTimer(settings.dismissTimer ?? 5)
+    setIncludeSourceUrl(settings.includeSourceUrl ?? false)
+    setIncludeDateTime(settings.includeDateTime ?? false)
 
     const today = new Date().toISOString().split("T")[0]
     setSavesToday(dailySaves?.date === today ? dailySaves.count : 0)
@@ -71,6 +79,20 @@ function IndexPopup() {
     await setStorage("settings", { ...settings, theme: newTheme })
   }
 
+  const handleSettingToggle = async (key: "autoDismiss" | "includeSourceUrl" | "includeDateTime", value: boolean) => {
+    if (key === "autoDismiss") setAutoDismiss(value)
+    if (key === "includeSourceUrl") setIncludeSourceUrl(value)
+    if (key === "includeDateTime") setIncludeDateTime(value)
+    const settings = await getSettings()
+    await setStorage("settings", { ...settings, [key]: value })
+  }
+
+  const handleDismissTimerChange = async (value: number) => {
+    setDismissTimer(value)
+    const settings = await getSettings()
+    await setStorage("settings", { ...settings, dismissTimer: value })
+  }
+
   const handleOpenSettings = () => {
     setShowSettings(true)
   }
@@ -105,10 +127,16 @@ function IndexPopup() {
       widgetEnabled={widgetEnabled}
       workspaceName={workspaceName}
       showSettings={showSettings}
+      autoDismiss={autoDismiss}
+      dismissTimer={dismissTimer}
+      includeSourceUrl={includeSourceUrl}
+      includeDateTime={includeDateTime}
       onToggleWidget={handleToggleWidget}
       onReconnect={handleReconnect}
       onDisconnect={handleDisconnect}
       onThemeChange={handleThemeChange}
+      onSettingToggle={handleSettingToggle}
+      onDismissTimerChange={handleDismissTimerChange}
       onOpenSettings={handleOpenSettings}
       onCloseSettings={() => setShowSettings(false)}
     />
