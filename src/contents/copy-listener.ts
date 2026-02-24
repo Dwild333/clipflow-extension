@@ -84,8 +84,14 @@ function sendCopyMessage(text: string) {
 document.addEventListener("copy", async (event: ClipboardEvent) => {
   pendingKeyboardCopy = false
   let text = ""
+  // Try clipboardData first (standard)
   if (event.clipboardData) {
     text = event.clipboardData.getData("text/plain")
+  }
+  // Many sites (e.g. news sites) intercept copy and replace/clear clipboardData.
+  // Fall back to the current selection text, which is always what the user highlighted.
+  if (!text) {
+    text = window.getSelection()?.toString() ?? ""
   }
   if (!text) {
     try { text = await navigator.clipboard.readText() } catch { /* ignore */ }

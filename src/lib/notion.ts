@@ -32,7 +32,8 @@ export async function searchNotionPages(query: string = ""): Promise<NotionPage[
   return data.results.map(pageFromAPI)
 }
 
-const NOTION_CHUNK_SIZE = 1990 // Notion rich_text max is 2000 chars per element
+const NOTION_CHUNK_SIZE = 1990  // Notion rich_text max is 2000 chars per element
+const NOTION_BLOCK_BATCH = 95   // Notion allows max 100 children per request; stay under
 
 /** Split text into ≤2000-char paragraph blocks */
 function textToBlocks(text: string): object[] {
@@ -45,6 +46,22 @@ function textToBlocks(text: string): object[] {
     type: "paragraph",
     paragraph: { rich_text: [{ type: "text", text: { content: chunk } }] },
   }))
+}
+
+/** Send blocks in batches of 95 to stay under Notion's 100-block-per-request limit */
+async function appendBlocksBatched(pageId: string, blocks: object[], headers: HeadersInit): Promise<void> {
+  for (let i = 0; i < blocks.length; i += NOTION_BLOCK_BATCH) {
+    const batch = blocks.slice(i, i + NOTION_BLOCK_BATCH)
+    const res = await fetch(`${NOTION_API}/blocks/${pageId}/children`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ children: batch }),
+    })
+    if (!res.ok) {
+      const err = await res.json() as { message?: string }
+      throw new Error(err.message || `Append failed: ${res.status}`)
+    }
+  }
 }
 
 /** Append a text block (+ optional metadata) to a Notion page */
@@ -82,15 +99,7 @@ export async function appendTextToPage(
     paragraph: { rich_text: [] },
   })
 
-  const res = await fetch(`${NOTION_API}/blocks/${pageId}/children`, {
-    method: "PATCH",
-    headers,
-    body: JSON.stringify({ children }),
-  })
-  if (!res.ok) {
-    const err = await res.json() as { message?: string }
-    throw new Error(err.message || `Append failed: ${res.status}`)
-  }
+  await appendBlocksBatched(pageId, children, headers)
 }
 
 /** Create a new Notion page under a parent page */
@@ -139,7 +148,7 @@ export async function recordRecentSave(params: {
   const existing = (await getStorage("recentSaves")) ?? []
   const newSave = {
     id: Date.now().toString(),
-    textPreview: params.text,
+    textPreview: params.text.slice(0, 300),
     destinationId: params.destinationId,
     destinationName: params.destinationName,
     destinationEmoji: params.destinationEmoji,
