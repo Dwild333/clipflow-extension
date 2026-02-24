@@ -394,6 +394,7 @@ function SettingsView({
   onDisconnect,
 }: SettingsViewProps) {
   const isDark = theme !== 'light'
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false)
   return (
     <>
       <div className={`px-4 py-3 flex items-center gap-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
@@ -519,12 +520,30 @@ function SettingsView({
                   <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>{workspaceName || 'My Workspace'}</div>
                   <div className="text-gray-500 text-xs">Connected</div>
                 </div>
-                <button
-                  onClick={onDisconnect}
-                  className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                >
-                  Disconnect
-                </button>
+                {confirmDisconnect ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Disconnect?</span>
+                    <button
+                      onClick={() => setConfirmDisconnect(false)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-black hover:bg-black/5'}`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={onDisconnect}
+                      className="px-2 py-1 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                    >
+                      Yes, disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDisconnect(true)}
+                    className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                )}
               </div>
             </div>
           </section>
