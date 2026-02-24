@@ -223,7 +223,7 @@ export function SettingsPanel({
             className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#2A2A2A] hover:bg-[#3A3A3A]' : 'bg-gray-100 hover:bg-gray-200'}`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-base">{parentPage?.emoji ?? '📄'}</span>
+              <PageIcon emoji={parentPage?.emoji ?? '📄'} iconUrl={parentPage?.iconUrl} size={18} />
               <span className={`text-sm truncate ${parentPage ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>
                 {parentPage?.name ?? 'Not set — tap to choose'}
               </span>
@@ -262,7 +262,7 @@ export function SettingsPanel({
                         : isDark ? 'hover:bg-[#3A3A3A]' : 'hover:bg-gray-100'
                     }`}
                   >
-                    <span className="text-base shrink-0">{page.emoji}</span>
+                    <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
                     <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
                     {parentPage?.id === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
                   </button>
