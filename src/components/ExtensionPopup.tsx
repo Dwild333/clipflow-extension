@@ -514,29 +514,13 @@ function SettingsView({
           {/* Connected Workspace */}
           <section>
             <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-3">Connected Workspace</div>
-            <div className={`rounded-lg p-3 ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-100'}`}>
-              <div className="flex items-center justify-between">
+            <div className={`rounded-lg overflow-hidden ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-100'}`}>
+              <div className="flex items-center justify-between px-3 py-2.5">
                 <div>
                   <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>{workspaceName || 'My Workspace'}</div>
                   <div className="text-gray-500 text-xs">Connected</div>
                 </div>
-                {confirmDisconnect ? (
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Disconnect?</span>
-                    <button
-                      onClick={() => setConfirmDisconnect(false)}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-black hover:bg-black/5'}`}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={onDisconnect}
-                      className="px-2 py-1 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-                    >
-                      Yes, disconnect
-                    </button>
-                  </div>
-                ) : (
+                {!confirmDisconnect && (
                   <button
                     onClick={() => setConfirmDisconnect(true)}
                     className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded transition-colors"
@@ -545,6 +529,25 @@ function SettingsView({
                   </button>
                 )}
               </div>
+              {confirmDisconnect && (
+                <div className={`px-3 py-2.5 border-t flex items-center justify-between gap-2 ${isDark ? 'border-white/10 bg-red-500/5' : 'border-black/10 bg-red-50'}`}>
+                  <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Remove this workspace?</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setConfirmDisconnect(false)}
+                      className={`px-3 py-1.5 text-xs rounded-md transition-colors ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-black hover:bg-black/10'}`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={onDisconnect}
+                      className="px-3 py-1.5 text-xs rounded-md bg-red-500 hover:bg-red-600 text-white transition-colors"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
