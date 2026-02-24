@@ -95,7 +95,7 @@ export function SettingsPanel({
   useEffect(() => {
     getSettings().then(s => {
       if (s.newPageParentId) {
-        setParentPage({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName })
+        setParentPage({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName, iconUrl: s.newPageParentIconUrl ?? undefined })
       }
     })
   }, [])
@@ -126,7 +126,7 @@ export function SettingsPanel({
     setParentSearch('')
     const settings = await getSettings()
     await chrome.storage.local.set({
-      settings: { ...settings, newPageParentId: page.id, newPageParentEmoji: page.emoji, newPageParentName: page.name }
+      settings: { ...settings, newPageParentId: page.id, newPageParentEmoji: page.emoji, newPageParentName: page.name, newPageParentIconUrl: page.iconUrl ?? null }
     })
   }
 

@@ -133,6 +133,10 @@ export function QuickSaveView({
   }, [isDragging, dragOffset, onPositionChange, onDragStateChange])
 
   const handleSave = async () => {
+    if (!selectedDestination.id) {
+      navigateTo('destination-picker')
+      return
+    }
     setSaveState('loading')
     setSaveError(null)
     try {

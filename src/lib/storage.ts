@@ -21,6 +21,7 @@ export interface ClipFlowStorage {
     newPageParentId: string | null
     newPageParentEmoji: string
     newPageParentName: string
+    newPageParentIconUrl: string | null
   }
 
   subscription: {
@@ -63,6 +64,7 @@ export const DEFAULT_SETTINGS: ClipFlowStorage['settings'] = {
   newPageParentId: null,
   newPageParentEmoji: '📄',
   newPageParentName: 'Choose a parent page',
+  newPageParentIconUrl: null,
 }
 
 export async function getStorage<K extends keyof ClipFlowStorage>(
