@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Settings, X, ChevronDown, Check, CircleAlert } from 'lucide-react'
+import { PageIcon } from './PageIcon'
 import { motion, AnimatePresence } from 'motion/react'
 import { DestinationPicker } from './DestinationPicker'
 import { SettingsPanel } from './SettingsPanel'
@@ -24,7 +25,7 @@ interface QuickSaveViewProps {
   includeDateTime?: boolean
   onIncludeSourceUrlChange?: (v: boolean) => void
   onIncludeDateTimeChange?: (v: boolean) => void
-  defaultDestination?: { id: string; emoji: string; name: string } | null
+  defaultDestination?: { id: string; emoji: string; iconUrl?: string; name: string } | null
   preview?: boolean
 }
 
@@ -69,7 +70,7 @@ export function QuickSaveView({
     : initialState === 'error' ? 'error'
     : 'idle'
   )
-  const [selectedDestination, setSelectedDestination] = useState(
+  const [selectedDestination, setSelectedDestination] = useState<{ id: string; emoji: string; iconUrl?: string; name: string }>(
     defaultDestination ?? { emoji: '📝', name: 'Choose a page', id: '' }
   )
   const [isDragging, setIsDragging] = useState(false)
@@ -139,6 +140,7 @@ export function QuickSaveView({
         destinationId: selectedDestination.id,
         destinationName: selectedDestination.name,
         destinationEmoji: selectedDestination.emoji,
+        destinationIconUrl: selectedDestination.iconUrl,
         sourceUrl,
       }) as { type: 'SAVE_RESULT'; success: boolean; error?: string }
 
@@ -155,7 +157,7 @@ export function QuickSaveView({
     }
   }
 
-  const handleDestinationSelect = (destination: { id: string; emoji: string; name: string }) => {
+  const handleDestinationSelect = (destination: { id: string; emoji: string; iconUrl?: string; name: string }) => {
     setSelectedDestination(destination)
     navigateTo('quick-save')
   }
@@ -221,7 +223,7 @@ export function QuickSaveView({
               className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#2A2A2A]/50 hover:bg-[#3A3A3A]' : 'bg-gray-100 hover:bg-gray-200'}`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">{selectedDestination.emoji}</span>
+                <PageIcon emoji={selectedDestination.emoji} iconUrl={selectedDestination.iconUrl} size={20} />
                 <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>{selectedDestination.name}</span>
               </div>
               <ChevronDown className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />

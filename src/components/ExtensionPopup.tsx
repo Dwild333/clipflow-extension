@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun } from 'lucide-react'
 import { ClipFlowLogo } from './ClipFlowLogo'
+import { PageIcon } from './PageIcon'
 
 interface ExtensionPopupProps {
   theme?: 'dark' | 'light'
@@ -32,7 +33,9 @@ interface RecentSave {
   destination: string
   destinationId: string
   destinationEmoji: string
+  destinationIconUrl?: string
   timeAgo: string
+  sourceUrl?: string
 }
 
 function timeAgo(isoString: string): string {
@@ -75,7 +78,7 @@ export function ExtensionPopup({
 
   useEffect(() => {
     chrome.storage.local.get('recentSaves').then((result) => {
-      const raw = result.recentSaves as Array<{ id: string; textPreview: string; destinationId: string; destinationName: string; destinationEmoji: string; savedAt: string }> | undefined
+      const raw = result.recentSaves as Array<{ id: string; textPreview: string; destinationId: string; destinationName: string; destinationEmoji: string; destinationIconUrl?: string; savedAt: string; sourceUrl?: string }> | undefined
       if (!raw?.length) return
       setRecentSaves(raw.slice(0, 5).map(s => ({
         id: s.id,
@@ -83,7 +86,9 @@ export function ExtensionPopup({
         destination: s.destinationName,
         destinationId: s.destinationId,
         destinationEmoji: s.destinationEmoji,
+        destinationIconUrl: s.destinationIconUrl,
         timeAgo: timeAgo(s.savedAt),
+        sourceUrl: s.sourceUrl,
       })))
     })
   }, [])
@@ -210,24 +215,39 @@ export function ExtensionPopup({
                   onClick={() => setExpandedId(expandedId === save.id ? null : save.id)}
                   className={`w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'} ${index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}`}
                 >
-                  <span className="text-sm mt-0.5 shrink-0">{save.destinationEmoji}</span>
+                  <div className="mt-0.5 shrink-0">
+                    <PageIcon emoji={save.destinationEmoji} iconUrl={save.destinationIconUrl} size={16} />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-xs ${expandedId === save.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       {save.preview}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 mt-0.5">
                       <a
                         href={`https://notion.so/${save.destinationId?.replace(/-/g, '')}`}
                         target="_blank"
                         rel="noreferrer"
                         onClick={e => e.stopPropagation()}
-                        className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors"
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors shrink-0"
                       >
                         {save.destination}
                         <ExternalLink className="w-2.5 h-2.5" />
                       </a>
-                      <span className="text-[10px] text-gray-600">·</span>
-                      <span className="text-[10px] text-gray-600">{save.timeAgo}</span>
+                      {save.sourceUrl && (
+                        <>
+                          <span className="text-[10px] text-gray-600">·</span>
+                          <a
+                            href={save.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-[10px] text-gray-500 hover:text-gray-400 flex items-center gap-0.5 transition-colors shrink-0"
+                          >
+                            source <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </>
+                      )}
+                      <span className="text-[10px] text-gray-400 ml-auto shrink-0">{save.timeAgo}</span>
                     </div>
                   </div>
                   <span className="text-[10px] text-gray-600 shrink-0 mt-0.5">{expandedId === save.id ? '▲' : '▼'}</span>

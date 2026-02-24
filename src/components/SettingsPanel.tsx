@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Sun, Moon, ChevronDown, ChevronUp, ExternalLink, Search, Check } from 'lucide-react'
 import { getSettings } from '../lib/storage'
 import type { NotionPage } from '../lib/notion'
+import { PageIcon } from './PageIcon'
 
 interface SettingsPanelProps {
   onBack: () => void
@@ -25,6 +26,7 @@ interface SaveRecord {
   destinationId: string
   destinationName: string
   destinationEmoji: string
+  destinationIconUrl?: string
   savedAt: string
   sourceUrl: string
 }
@@ -288,26 +290,24 @@ export function SettingsPanel({
                     onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                     className={`w-full px-3 py-2 flex items-start gap-2 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}
                   >
-                    <span className="text-base mt-0.5 shrink-0 leading-none">
-                      {item.destinationEmoji && item.destinationEmoji !== '📄' ? item.destinationEmoji : '📄'}
-                    </span>
+                    <div className="mt-0.5 shrink-0">
+                      <PageIcon emoji={item.destinationEmoji || '📄'} iconUrl={item.destinationIconUrl} size={16} />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className={`text-xs ${expandedId === item.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                         {item.textPreview}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 mt-0.5">
                         <a
                           href={`https://notion.so/${item.destinationId?.replace(/-/g, '')}`}
                           target="_blank"
                           rel="noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors"
+                          className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors shrink-0"
                         >
                           {item.destinationName}
                           <ExternalLink className="w-2.5 h-2.5" />
                         </a>
-                        <span className="text-[10px] text-gray-600">·</span>
-                        <span className="text-[10px] text-gray-600">{timeAgo(item.savedAt)}</span>
                         {item.sourceUrl && (
                           <>
                             <span className="text-[10px] text-gray-600">·</span>
@@ -316,12 +316,13 @@ export function SettingsPanel({
                               target="_blank"
                               rel="noreferrer"
                               onClick={e => e.stopPropagation()}
-                              className="text-[10px] text-gray-500 hover:text-gray-400 flex items-center gap-0.5 transition-colors"
+                              className="text-[10px] text-gray-500 hover:text-gray-400 flex items-center gap-0.5 transition-colors shrink-0"
                             >
                               source <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                           </>
                         )}
+                        <span className="text-[10px] text-gray-400 ml-auto shrink-0">{timeAgo(item.savedAt)}</span>
                       </div>
                     </div>
                     <span className="text-[10px] text-gray-600 shrink-0 mt-0.5">

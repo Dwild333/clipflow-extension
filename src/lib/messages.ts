@@ -37,6 +37,7 @@ export interface SaveToNotionMessage {
   destinationId: string
   destinationName: string
   destinationEmoji: string
+  destinationIconUrl?: string
   sourceUrl: string
 }
 

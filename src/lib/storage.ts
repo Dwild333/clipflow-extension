@@ -41,6 +41,7 @@ export interface ClipFlowStorage {
     destinationId: string
     destinationName: string
     destinationEmoji: string
+    destinationIconUrl?: string
     savedAt: string
     sourceUrl: string
   }>

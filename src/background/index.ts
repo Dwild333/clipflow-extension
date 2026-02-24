@@ -3,6 +3,9 @@ import { launchNotionOAuth, disconnectNotion } from "../lib/oauth"
 import { appendTextToPage, incrementDailySaves, recordRecentSave, searchNotionPages, createNotionPage } from "../lib/notion"
 import type { ExtensionMessage, ShowWidgetMessage, SaveResultMessage } from "../lib/messages"
 
+// Open uninstall feedback survey when the extension is removed
+chrome.runtime.setUninstallURL("https://clipflow.tools/uninstall")
+
 // ─── Message Router ──────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener(
@@ -80,7 +83,7 @@ async function handleCopyDetected(
 }
 
 async function handleSaveToNotion(
-  message: { type: "SAVE_TO_NOTION"; text: string; destinationId: string; destinationName: string; destinationEmoji: string; sourceUrl: string },
+  message: { type: "SAVE_TO_NOTION"; text: string; destinationId: string; destinationName: string; destinationEmoji: string; destinationIconUrl?: string; sourceUrl: string },
   _tabId: number | undefined
 ): Promise<SaveResultMessage> {
   try {
@@ -105,6 +108,7 @@ async function handleSaveToNotion(
       destinationId: message.destinationId,
       destinationName: message.destinationName,
       destinationEmoji: message.destinationEmoji,
+      destinationIconUrl: message.destinationIconUrl,
       sourceUrl: message.sourceUrl,
     })
 

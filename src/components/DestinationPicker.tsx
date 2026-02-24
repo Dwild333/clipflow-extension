@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, X, Plus } from 'lucide-react'
 import type { NotionPage } from '../lib/notion'
+import { PageIcon } from './PageIcon'
 
 async function searchPagesViaBackground(query: string): Promise<NotionPage[]> {
   const result = await chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query }) as { success: boolean; pages?: NotionPage[]; error?: string }
@@ -10,7 +11,7 @@ async function searchPagesViaBackground(query: string): Promise<NotionPage[]> {
 
 interface DestinationPickerProps {
   onBack: () => void
-  onSelect: (destination: { id: string; emoji: string; name: string }) => void
+  onSelect: (destination: { id: string; emoji: string; iconUrl?: string; name: string }) => void
   onCreateNew: () => void
   theme?: 'dark' | 'light'
 }
@@ -93,7 +94,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
                   onClick={() => onSelect(page)}
                   className={`w-full h-9 px-3 flex items-center gap-2 rounded-md transition-colors ${isDark ? 'hover:bg-[#3A3A3A]' : 'hover:bg-gray-200'}`}
                 >
-                  <span className="text-base">{page.emoji}</span>
+                  <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
                   <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>
                     {searchQuery
                       ? page.name.split(new RegExp(`(${searchQuery})`, 'gi')).map((part: string, i: number) =>

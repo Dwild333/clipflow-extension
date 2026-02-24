@@ -127,12 +127,13 @@ export async function incrementDailySaves(): Promise<void> {
   await setStorage("dailySaves", { date: today, count })
 }
 
-/** Record a save in recent saves list (max 10) */
+/** Record a save in recent saves list (max 50) */
 export async function recordRecentSave(params: {
   text: string
   destinationId: string
   destinationName: string
   destinationEmoji: string
+  destinationIconUrl?: string
   sourceUrl: string
 }): Promise<void> {
   const existing = (await getStorage("recentSaves")) ?? []
@@ -142,6 +143,7 @@ export async function recordRecentSave(params: {
     destinationId: params.destinationId,
     destinationName: params.destinationName,
     destinationEmoji: params.destinationEmoji,
+    destinationIconUrl: params.destinationIconUrl,
     savedAt: new Date().toISOString(),
     sourceUrl: params.sourceUrl,
   }
@@ -154,12 +156,18 @@ export async function recordRecentSave(params: {
 export interface NotionPage {
   id: string
   emoji: string
+  iconUrl?: string
   name: string
 }
 
 interface NotionAPIPage {
   id: string
-  icon?: { type: string; emoji?: string }
+  icon?: {
+    type: string
+    emoji?: string
+    external?: { url: string }
+    file?: { url: string; expiry_time?: string }
+  }
   properties?: {
     title?: { title: Array<{ plain_text: string }> }
     Name?: { title: Array<{ plain_text: string }> }
@@ -168,12 +176,17 @@ interface NotionAPIPage {
 }
 
 function pageFromAPI(page: NotionAPIPage): NotionPage {
-  const emoji = page.icon?.type === "emoji" ? (page.icon.emoji ?? "📄") : "📄"
+  const iconType = page.icon?.type
+  const emoji = iconType === "emoji" ? (page.icon?.emoji ?? "📄") : "📄"
+  const iconUrl =
+    iconType === "external" ? page.icon?.external?.url
+    : iconType === "file" ? page.icon?.file?.url
+    : undefined
   const titleArr =
     page.properties?.title?.title ??
     page.properties?.Name?.title ??
     page.title ??
     []
   const name = titleArr.map((t) => t.plain_text).join("") || "Untitled"
-  return { id: page.id, emoji, name }
+  return { id: page.id, emoji, iconUrl, name }
 }

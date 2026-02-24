@@ -9,18 +9,27 @@ export const config: PlasmoCSConfig = {
 let lastCopiedText = ""
 let pendingKeyboardCopy = false
 
+const WIDGET_W = 376  // widget width + small margin
+const WIDGET_H = 320  // conservative widget height
+
 function getSelectionPosition(): { x: number; y: number } {
   const selection = window.getSelection()
-  let x = window.innerWidth / 2
-  let y = window.innerHeight / 2
+  let x = window.innerWidth / 2 - WIDGET_W / 2
+  let y = window.innerHeight / 2 - WIDGET_H / 2
   if (selection && selection.rangeCount > 0) {
     const range = selection.getRangeAt(0)
     const rect = range.getBoundingClientRect()
     if (rect.width > 0 || rect.height > 0) {
-      x = Math.min(rect.right + 16, window.innerWidth - 380)
-      y = Math.max(rect.bottom + 8, 8)
+      // Prefer below-right of selection; flip above if not enough room below
+      const spaceBelow = window.innerHeight - rect.bottom
+      const preferAbove = spaceBelow < WIDGET_H + 16
+      x = rect.right + 16
+      y = preferAbove ? rect.top - WIDGET_H - 8 : rect.bottom + 8
     }
   }
+  // Clamp so widget is always fully visible
+  x = Math.max(8, Math.min(x, window.innerWidth - WIDGET_W))
+  y = Math.max(8, Math.min(y, window.innerHeight - WIDGET_H))
   return { x, y }
 }
 
