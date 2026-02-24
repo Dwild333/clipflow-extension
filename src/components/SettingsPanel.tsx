@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Sun, Moon, ChevronDown, ChevronUp, ExternalLink, Search, Check } from 'lucide-react'
+import { Sun, Moon, ChevronDown, ChevronUp, ExternalLink, Search, Check, Trash2 } from 'lucide-react'
 import { getSettings } from '../lib/storage'
 import type { NotionPage } from '../lib/notion'
 import { PageIcon } from './PageIcon'
@@ -71,6 +71,7 @@ export function SettingsPanel({
   const [history, setHistory] = useState<SaveRecord[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showAllHistory, setShowAllHistory] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [parentPage, setParentPage] = useState<NotionPage | null>(null)
   const [showParentPicker, setShowParentPicker] = useState(false)
   const [parentSearch, setParentSearch] = useState('')
@@ -110,6 +111,14 @@ export function SettingsPanel({
       })
       .catch(() => setParentPagesLoading(false))
   }, [showParentPicker])
+
+  const handleDeleteItem = async (id: string) => {
+    const updated = history.filter(h => h.id !== id)
+    setHistory(updated)
+    setConfirmDeleteId(null)
+    setExpandedId(null)
+    await chrome.storage.local.set({ recentSaves: updated })
+  }
 
   const handleParentSelect = async (page: NotionPage) => {
     setParentPage(page)
@@ -287,7 +296,7 @@ export function SettingsPanel({
               {(showAllHistory ? history : history.slice(0, HISTORY_PREVIEW)).map((item, i) => (
                 <div key={item.id} className={i > 0 ? isDark ? 'border-t border-white/5' : 'border-t border-black/5' : ''}>
                   <button
-                    onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                    onClick={() => { setExpandedId(expandedId === item.id ? null : item.id); setConfirmDeleteId(null) }}
                     className={`w-full px-3 py-2 flex items-start gap-2 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}
                   >
                     <div className="mt-0.5 shrink-0">
@@ -329,6 +338,36 @@ export function SettingsPanel({
                       {expandedId === item.id ? '▲' : '▼'}
                     </span>
                   </button>
+                  {/* Delete controls — shown when row is expanded */}
+                  {expandedId === item.id && (
+                    <div className={`px-3 pb-2 flex items-center justify-end gap-2`}>
+                      {confirmDeleteId === item.id ? (
+                        <>
+                          <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Delete this entry?</span>
+                          <button
+                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(null) }}
+                            className={`px-2 py-0.5 text-[10px] rounded transition-colors ${isDark ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-black hover:bg-black/5'}`}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); handleDeleteItem(item.id) }}
+                            className="px-2 py-0.5 text-[10px] rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                          >
+                            Yes, delete
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={e => { e.stopPropagation(); setConfirmDeleteId(item.id) }}
+                          className={`flex items-center gap-1 px-2 py-0.5 text-[10px] rounded transition-colors ${isDark ? 'text-gray-600 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
