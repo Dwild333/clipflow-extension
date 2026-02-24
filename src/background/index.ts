@@ -1,6 +1,6 @@
 import { getSettings, getStorage, setStorage } from "../lib/storage"
 import { launchNotionOAuth, disconnectNotion } from "../lib/oauth"
-import { appendTextToPage, incrementDailySaves, recordRecentSave, searchNotionPages } from "../lib/notion"
+import { appendTextToPage, incrementDailySaves, recordRecentSave, searchNotionPages, createNotionPage } from "../lib/notion"
 import type { ExtensionMessage, ShowWidgetMessage, SaveResultMessage } from "../lib/messages"
 
 // ─── Message Router ──────────────────────────────────────────────────────────
@@ -26,6 +26,10 @@ chrome.runtime.onMessage.addListener(
 
       case "SEARCH_PAGES":
         handleSearchPages(message.query).then(sendResponse)
+        return true
+
+      case "CREATE_PAGE":
+        handleCreatePage(message.parentPageId, message.title).then(sendResponse)
         return true
 
       case "GET_AUTH_STATE":
@@ -118,6 +122,18 @@ async function handleConnect(): Promise<{ success: boolean; error?: string }> {
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "OAuth failed" }
+  }
+}
+
+async function handleCreatePage(
+  parentPageId: string,
+  title: string
+): Promise<{ success: boolean; page?: import("../lib/notion").NotionPage; error?: string }> {
+  try {
+    const page = await createNotionPage(parentPageId, title)
+    return { success: true, page }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Create page failed" }
   }
 }
 

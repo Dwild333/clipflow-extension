@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Sun, Moon, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
+import { Sun, Moon, ChevronDown, ChevronUp, ExternalLink, Search, Check } from 'lucide-react'
+import { getSettings } from '../lib/storage'
 import type { NotionPage } from '../lib/notion'
 
 interface SettingsPanelProps {
@@ -68,6 +69,11 @@ export function SettingsPanel({
   const [history, setHistory] = useState<SaveRecord[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showAllHistory, setShowAllHistory] = useState(false)
+  const [parentPage, setParentPage] = useState<NotionPage | null>(null)
+  const [showParentPicker, setShowParentPicker] = useState(false)
+  const [parentSearch, setParentSearch] = useState('')
+  const [parentPages, setParentPages] = useState<NotionPage[]>([])
+  const [parentPagesLoading, setParentPagesLoading] = useState(false)
   const isDark = theme !== 'light'
 
   // Load real Notion pages when manage section opens
@@ -81,6 +87,37 @@ export function SettingsPanel({
       })
       .catch(() => setPagesLoading(false))
   }, [showManagePages])
+
+  // Load saved parent page setting
+  useEffect(() => {
+    getSettings().then(s => {
+      if (s.newPageParentId) {
+        setParentPage({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName })
+      }
+    })
+  }, [])
+
+  // Fetch pages for parent picker when it opens
+  useEffect(() => {
+    if (!showParentPicker || parentPages.length > 0) return
+    setParentPagesLoading(true)
+    chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query: '' })
+      .then((res: { success: boolean; pages?: NotionPage[] }) => {
+        setParentPages(res?.pages ?? [])
+        setParentPagesLoading(false)
+      })
+      .catch(() => setParentPagesLoading(false))
+  }, [showParentPicker])
+
+  const handleParentSelect = async (page: NotionPage) => {
+    setParentPage(page)
+    setShowParentPicker(false)
+    setParentSearch('')
+    const settings = await getSettings()
+    await chrome.storage.local.set({
+      settings: { ...settings, newPageParentId: page.id, newPageParentEmoji: page.emoji, newPageParentName: page.name }
+    })
+  }
 
   // Load full save history from storage
   useEffect(() => {
@@ -160,6 +197,66 @@ export function SettingsPanel({
                   [&::-webkit-slider-thumb]:bg-indigo-500
                   ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-200'}`}
               />
+            </div>
+          )}
+        </section>
+
+        <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+        {/* ── Default Parent Page ── */}
+        <section className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wider text-gray-500">New Page Location</div>
+          <div className="text-xs text-gray-500">Where new pages are created by default</div>
+          <button
+            onClick={() => setShowParentPicker(v => !v)}
+            className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#2A2A2A] hover:bg-[#3A3A3A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">{parentPage?.emoji ?? '📄'}</span>
+              <span className={`text-sm truncate ${parentPage ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>
+                {parentPage?.name ?? 'Not set — tap to choose'}
+              </span>
+            </div>
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDark ? 'text-gray-400' : 'text-gray-600'} ${showParentPicker ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showParentPicker && (
+            <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-[#2A2A2A] border-white/10' : 'bg-white border-black/10'}`}>
+              <div className={`px-2 py-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+                <div className="relative">
+                  <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                  <input
+                    type="text"
+                    value={parentSearch}
+                    onChange={e => setParentSearch(e.target.value)}
+                    placeholder="Search pages..."
+                    className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-[#1A1A1A] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
+                  />
+                </div>
+              </div>
+              <div className="max-h-[160px] overflow-y-auto">
+                {parentPagesLoading ? (
+                  <div className="flex justify-center py-4">
+                    <div className={`w-4 h-4 border-2 rounded-full animate-spin ${isDark ? 'border-gray-600 border-t-white' : 'border-gray-300 border-t-black'}`} />
+                  </div>
+                ) : (parentSearch ? parentPages.filter(p => p.name.toLowerCase().includes(parentSearch.toLowerCase())) : parentPages).length === 0 ? (
+                  <div className="py-3 text-center text-xs text-gray-500">No pages found</div>
+                ) : (parentSearch ? parentPages.filter(p => p.name.toLowerCase().includes(parentSearch.toLowerCase())) : parentPages).map(page => (
+                  <button
+                    key={page.id}
+                    onClick={() => handleParentSelect(page)}
+                    className={`w-full h-9 px-3 flex items-center gap-2 transition-colors ${
+                      parentPage?.id === page.id
+                        ? isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'
+                        : isDark ? 'hover:bg-[#3A3A3A]' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-base shrink-0">{page.emoji}</span>
+                    <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
+                    {parentPage?.id === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </section>

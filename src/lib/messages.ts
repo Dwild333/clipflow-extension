@@ -10,6 +10,7 @@ export type MessageType =
   | 'GET_AUTH_STATE'
   | 'GET_SETTINGS'
   | 'SETTINGS_RESULT'
+  | 'CREATE_PAGE'
 
 export interface CopyDetectedMessage {
   type: 'COPY_DETECTED'
@@ -62,6 +63,12 @@ export interface GetAuthStateMessage {
   type: 'GET_AUTH_STATE'
 }
 
+export interface CreatePageMessage {
+  type: 'CREATE_PAGE'
+  parentPageId: string
+  title: string
+}
+
 export type ExtensionMessage =
   | CopyDetectedMessage
   | ShowWidgetMessage
@@ -71,3 +78,4 @@ export type ExtensionMessage =
   | NotionDisconnectMessage
   | SearchPagesMessage
   | GetAuthStateMessage
+  | CreatePageMessage
