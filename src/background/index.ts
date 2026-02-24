@@ -90,7 +90,11 @@ async function handleSaveToNotion(
       return { type: "SAVE_RESULT", success: false, error: "Daily limit reached. Upgrade to Pro for unlimited saves." }
     }
 
-    await appendTextToPage(message.destinationId, message.text)
+    const settings = await getSettings()
+    await appendTextToPage(message.destinationId, message.text, {
+      sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
+      includeDateTime: settings.includeDateTime,
+    })
     await incrementDailySaves()
     await recordRecentSave({
       text: message.text,

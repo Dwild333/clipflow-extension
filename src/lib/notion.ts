@@ -32,23 +32,53 @@ export async function searchNotionPages(query: string = ""): Promise<NotionPage[
   return data.results.map(pageFromAPI)
 }
 
-/** Append a text block to a Notion page */
-export async function appendTextToPage(pageId: string, text: string): Promise<void> {
+/** Append a text block (+ optional metadata) to a Notion page */
+export async function appendTextToPage(
+  pageId: string,
+  text: string,
+  options?: { sourceUrl?: string; includeDateTime?: boolean }
+): Promise<void> {
   const headers = await notionHeaders()
+
+  const children: object[] = [
+    {
+      object: "block",
+      type: "paragraph",
+      paragraph: {
+        rich_text: [{ type: "text", text: { content: text } }],
+      },
+    },
+  ]
+
+  // Optional metadata lines
+  const metaParts: string[] = []
+  if (options?.includeDateTime) {
+    metaParts.push(`🕐 ${new Date().toLocaleString()}`)
+  }
+  if (options?.sourceUrl) {
+    metaParts.push(`🔗 ${options.sourceUrl}`)
+  }
+  if (metaParts.length > 0) {
+    children.push({
+      object: "block",
+      type: "paragraph",
+      paragraph: {
+        rich_text: [{ type: "text", text: { content: metaParts.join("  ·  ") }, annotations: { color: "gray" } }],
+      },
+    })
+  }
+
+  // Empty paragraph as separator so next save doesn't run together
+  children.push({
+    object: "block",
+    type: "paragraph",
+    paragraph: { rich_text: [] },
+  })
+
   const res = await fetch(`${NOTION_API}/blocks/${pageId}/children`, {
     method: "PATCH",
     headers,
-    body: JSON.stringify({
-      children: [
-        {
-          object: "block",
-          type: "paragraph",
-          paragraph: {
-            rich_text: [{ type: "text", text: { content: text } }],
-          },
-        },
-      ],
-    }),
+    body: JSON.stringify({ children }),
   })
   if (!res.ok) {
     const err = await res.json() as { message?: string }
@@ -101,14 +131,14 @@ export async function recordRecentSave(params: {
   const existing = (await getStorage("recentSaves")) ?? []
   const newSave = {
     id: Date.now().toString(),
-    textPreview: params.text.slice(0, 80),
+    textPreview: params.text,
     destinationId: params.destinationId,
     destinationName: params.destinationName,
     destinationEmoji: params.destinationEmoji,
     savedAt: new Date().toISOString(),
     sourceUrl: params.sourceUrl,
   }
-  const updated = [newSave, ...existing].slice(0, 10)
+  const updated = [newSave, ...existing].slice(0, 50)
   await setStorage("recentSaves", updated)
 }
 

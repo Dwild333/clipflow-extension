@@ -16,6 +16,8 @@ export interface ClipFlowStorage {
     dismissTimer: number
     widgetEnabled: boolean
     favoritePageIds: string[]
+    includeSourceUrl: boolean
+    includeDateTime: boolean
   }
 
   subscription: {
@@ -52,6 +54,8 @@ export const DEFAULT_SETTINGS: ClipFlowStorage['settings'] = {
   dismissTimer: 5,
   widgetEnabled: true,
   favoritePageIds: [],
+  includeSourceUrl: false,
+  includeDateTime: false,
 }
 
 export async function getStorage<K extends keyof ClipFlowStorage>(

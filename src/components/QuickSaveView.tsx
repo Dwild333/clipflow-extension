@@ -13,12 +13,17 @@ interface QuickSaveViewProps {
   clipboardContent?: string
   sourceUrl?: string
   onPositionChange?: (position: { x: number; y: number }) => void
+  onDragStateChange?: (dragging: boolean) => void
   theme?: 'dark' | 'light'
   onThemeChange?: (theme: 'dark' | 'light') => void
   autoDismiss?: boolean
   dismissTimer?: number
   onAutoDismissChange?: (enabled: boolean) => void
   onDismissTimerChange?: (seconds: number) => void
+  includeSourceUrl?: boolean
+  includeDateTime?: boolean
+  onIncludeSourceUrlChange?: (v: boolean) => void
+  onIncludeDateTimeChange?: (v: boolean) => void
   defaultDestination?: { id: string; emoji: string; name: string } | null
   preview?: boolean
 }
@@ -38,12 +43,17 @@ export function QuickSaveView({
   clipboardContent,
   sourceUrl = '',
   onPositionChange,
+  onDragStateChange,
   theme = 'dark',
   onThemeChange,
   autoDismiss,
   dismissTimer,
   onAutoDismissChange,
   onDismissTimerChange,
+  includeSourceUrl = false,
+  includeDateTime = false,
+  onIncludeSourceUrlChange,
+  onIncludeDateTimeChange,
   defaultDestination,
   preview,
 }: QuickSaveViewProps) {
@@ -90,6 +100,7 @@ export function QuickSaveView({
     if (target.closest('button')) return
     handleInteraction()
     setIsDragging(true)
+    onDragStateChange?.(true)
     setDragOffset({ x: e.clientX - position.x, y: e.clientY - position.y })
   }
 
@@ -102,7 +113,11 @@ export function QuickSaveView({
       const clampedY = Math.max(0, Math.min(rawY, window.innerHeight - WIDGET_HEIGHT))
       onPositionChange?.({ x: clampedX, y: clampedY })
     }
-    const handleMouseUp = () => setIsDragging(false)
+    const handleMouseUp = () => {
+      setIsDragging(false)
+      // Keep drag flag set briefly so the mouseup-triggered click doesn't dismiss
+      setTimeout(() => onDragStateChange?.(false), 200)
+    }
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
@@ -111,7 +126,7 @@ export function QuickSaveView({
         document.removeEventListener('mouseup', handleMouseUp)
       }
     }
-  }, [isDragging, dragOffset, onPositionChange])
+  }, [isDragging, dragOffset, onPositionChange, onDragStateChange])
 
   const handleSave = async () => {
     setSaveState('loading')
@@ -170,6 +185,10 @@ export function QuickSaveView({
           dismissTimer={dismissTimer}
           onAutoDismissChange={onAutoDismissChange}
           onDismissTimerChange={onDismissTimerChange}
+          includeSourceUrl={includeSourceUrl}
+          includeDateTime={includeDateTime}
+          onIncludeSourceUrlChange={onIncludeSourceUrlChange}
+          onIncludeDateTimeChange={onIncludeDateTimeChange}
         />
       ),
       'create-page': (

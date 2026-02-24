@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import type { PlasmoCSConfig, PlasmoGetShadowHostId, PlasmoGetStyle } from "plasmo"
 import styleText from "data-text:./clip-widget.css"
 import { QuickSaveView } from "../components/QuickSaveView"
@@ -25,6 +25,8 @@ interface WidgetState {
   theme: "dark" | "light"
   autoDismiss: boolean
   dismissTimer: number
+  includeSourceUrl: boolean
+  includeDateTime: boolean
   defaultDestination: { id: string; emoji: string; name: string } | null
 }
 
@@ -37,8 +39,12 @@ export default function ClipWidget() {
     theme: "dark",
     autoDismiss: false,
     dismissTimer: 5,
+    includeSourceUrl: false,
+    includeDateTime: false,
     defaultDestination: null,
   })
+
+  const isDraggingRef = useRef(false)
 
   const hideWidget = useCallback(() => {
     setWidget((prev) => ({ ...prev, visible: false }))
@@ -58,6 +64,8 @@ export default function ClipWidget() {
         theme: settings.theme,
         autoDismiss: settings.autoDismiss,
         dismissTimer: settings.dismissTimer,
+        includeSourceUrl: settings.includeSourceUrl ?? false,
+        includeDateTime: settings.includeDateTime ?? false,
         defaultDestination: message.defaultDestination ?? null,
       })
     }
@@ -75,9 +83,10 @@ export default function ClipWidget() {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [widget.visible, hideWidget])
 
-  // Dismiss on click outside the shadow root
+  // Dismiss on click outside the shadow root (but not during/after drag)
   useEffect(() => {
     const handleClickOutside = () => {
+      if (isDraggingRef.current) return
       if (widget.visible) hideWidget()
     }
     document.addEventListener("click", handleClickOutside)
@@ -86,6 +95,11 @@ export default function ClipWidget() {
 
   if (!widget.visible) return null
 
+  const persistSettings = async (patch: Partial<WidgetState>) => {
+    const current = await getSettings()
+    await chrome.storage.local.set({ settings: { ...current, ...patch } })
+  }
+
   return (
     <QuickSaveView
       position={widget.position}
@@ -93,10 +107,17 @@ export default function ClipWidget() {
       clipboardContent={widget.text}
       sourceUrl={widget.sourceUrl}
       onPositionChange={(pos) => setWidget((prev) => ({ ...prev, position: pos }))}
+      onDragStateChange={(dragging) => { isDraggingRef.current = dragging }}
       theme={widget.theme}
-      onThemeChange={(theme) => setWidget((prev) => ({ ...prev, theme }))}
+      onThemeChange={(theme) => { setWidget((prev) => ({ ...prev, theme })); persistSettings({ theme }) }}
       autoDismiss={widget.autoDismiss}
       dismissTimer={widget.dismissTimer}
+      onAutoDismissChange={(autoDismiss) => { setWidget((prev) => ({ ...prev, autoDismiss })); persistSettings({ autoDismiss }) }}
+      onDismissTimerChange={(dismissTimer) => { setWidget((prev) => ({ ...prev, dismissTimer })); persistSettings({ dismissTimer }) }}
+      includeSourceUrl={widget.includeSourceUrl}
+      includeDateTime={widget.includeDateTime}
+      onIncludeSourceUrlChange={(includeSourceUrl) => { setWidget((prev) => ({ ...prev, includeSourceUrl })); persistSettings({ includeSourceUrl }) }}
+      onIncludeDateTimeChange={(includeDateTime) => { setWidget((prev) => ({ ...prev, includeDateTime })); persistSettings({ includeDateTime }) }}
       defaultDestination={widget.defaultDestination}
     />
   )
