@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown, Star, Sun, Moon } from 'lucide-react'
+import { ChevronDown, Star, Sun, Moon } from 'lucide-react'
 import { NotionWorkspaceIcon } from '../shared/NotionWorkspaceIcon'
 
 interface SettingsPanelProps {
@@ -43,16 +43,6 @@ export function SettingsPanel({ onBack, theme = 'dark', onThemeChange, autoDismi
 
   return (
     <>
-      <div className={`flex items-center justify-between h-11 px-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-        <button
-          onClick={onBack}
-          className={`flex items-center gap-2 text-sm font-semibold transition-colors ${isDark ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-700'}`}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Settings</span>
-        </button>
-      </div>
-
       <div className="p-4 space-y-6 max-h-[400px] overflow-y-auto">
         {/* Default Destination */}
         <div>

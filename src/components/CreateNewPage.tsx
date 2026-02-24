@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 interface CreateNewPageProps {
   onBack: () => void
@@ -27,16 +27,6 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
 
   return (
     <>
-      <div className={`flex items-center justify-between h-11 px-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-        <button
-          onClick={onBack}
-          className={`flex items-center gap-2 text-sm font-semibold transition-colors ${isDark ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-700'}`}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Create New Page</span>
-        </button>
-      </div>
-
       <div className="p-4 space-y-4">
         <div>
           <label className="block text-[11px] uppercase font-medium text-gray-600 mb-2 px-1">

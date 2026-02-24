@@ -82,6 +82,9 @@ export function QuickSaveView({
 
   const handleInteraction = () => setLastInteraction(Date.now())
 
+  const WIDGET_WIDTH = 360
+  const WIDGET_HEIGHT = 300 // conservative min height
+
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
     if (target.closest('button')) return
@@ -93,7 +96,11 @@ export function QuickSaveView({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return
-      onPositionChange?.({ x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y })
+      const rawX = e.clientX - dragOffset.x
+      const rawY = e.clientY - dragOffset.y
+      const clampedX = Math.max(0, Math.min(rawX, window.innerWidth - WIDGET_WIDTH))
+      const clampedY = Math.max(0, Math.min(rawY, window.innerHeight - WIDGET_HEIGHT))
+      onPositionChange?.({ x: clampedX, y: clampedY })
     }
     const handleMouseUp = () => setIsDragging(false)
     if (isDragging) {
@@ -177,31 +184,6 @@ export function QuickSaveView({
       ),
       'quick-save': (
         <>
-          {/* Header */}
-          <div
-            className={`flex items-center justify-between h-11 px-4 border-b cursor-move ${isDark ? 'border-white/10' : 'border-black/10'}`}
-            onMouseDown={handleMouseDown}
-          >
-            <div className="flex items-center gap-2">
-              <ClipFlowLogo size={16} />
-              <span className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>ClipFlow</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => navigateTo('settings')}
-                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
-              >
-                <Settings className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </button>
-              <button
-                onClick={onClose}
-                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
-              >
-                <X className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </button>
-            </div>
-          </div>
-
           {/* Clipboard Preview */}
           <div className="p-4">
             <div className={`rounded-lg p-3 max-h-[120px] overflow-y-auto ${isDark ? 'bg-[#2A2A2A]/90' : 'bg-gray-100'}`}>
@@ -304,6 +286,45 @@ export function QuickSaveView({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Persistent drag handle — always visible across all views */}
+        {!preview && (
+          <div
+            className={`flex items-center justify-between h-11 px-4 border-b cursor-move select-none ${
+              isDark ? 'border-white/10' : 'border-black/10'
+            }`}
+            onMouseDown={handleMouseDown}
+          >
+            <div className="flex items-center gap-2">
+              <ClipFlowLogo size={16} />
+              <span className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>
+                {currentView === 'quick-save' ? 'ClipFlow'
+                  : currentView === 'settings' ? 'Settings'
+                  : currentView === 'destination-picker' ? 'Choose Destination'
+                  : 'Create New Page'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {currentView === 'quick-save' && (
+                <button
+                  onClick={() => navigateTo('settings')}
+                  className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${
+                    isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
+                  }`}
+                >
+                  <Settings className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                </button>
+              )}
+              <button
+                onClick={currentView === 'quick-save' ? onClose : () => navigateTo('quick-save')}
+                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${
+                  isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
+                }`}
+              >
+                <X className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+            </div>
+          </div>
+        )}
         {renderContent()}
       </div>
     </div>

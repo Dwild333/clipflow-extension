@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Search, X, Plus } from 'lucide-react'
+import { Search, X, Plus } from 'lucide-react'
 import type { NotionPage } from '../lib/notion'
 
 async function searchPagesViaBackground(query: string): Promise<NotionPage[]> {
@@ -48,16 +48,6 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
 
   return (
     <>
-      <div className={`flex items-center justify-between h-11 px-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-        <button
-          onClick={onBack}
-          className={`flex items-center gap-2 text-sm font-semibold transition-colors ${isDark ? 'text-white hover:text-gray-300' : 'text-black hover:text-gray-700'}`}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Choose Destination</span>
-        </button>
-      </div>
-
       <div className="p-4">
         <div className="relative">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
