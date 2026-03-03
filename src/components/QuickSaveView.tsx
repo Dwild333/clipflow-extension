@@ -152,9 +152,7 @@ export function QuickSaveView({
 
       if (result?.success) {
         setSaveState('success')
-        if (autoDismiss && dismissTimer) {
-          setTimeout(() => onClose(), dismissTimer * 1000)
-        }
+        setTimeout(() => onClose(), 2000)
       } else {
         setSaveError(result?.error ?? null)
         setSaveState('error')
