@@ -50,7 +50,25 @@ function IndexPopup() {
   }
 
   useEffect(() => {
-    loadState()
+    loadState().then(async () => {
+      const sub = await getStorage("subscription")
+      if (!sub?.isPro || !sub?.licenseKey) return
+      try {
+        const auth = await getStorage("auth")
+        const res = await fetch("https://clipper-api.vercel.app/api/verify-license", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ licenseKey: sub.licenseKey, workspaceId: auth?.workspaceId }),
+        })
+        const data = await res.json() as { valid: boolean }
+        if (!data.valid) {
+          await chrome.storage.local.set({ subscription: { ...sub, isPro: false } })
+          setIsPro(false)
+        }
+      } catch {
+        // Network failure — keep local isPro as-is, don't downgrade offline users
+      }
+    })
   }, [])
 
   const handleToggleWidget = async (enabled: boolean) => {
@@ -70,7 +88,12 @@ function IndexPopup() {
     await chrome.runtime.sendMessage({ type: "NOTION_DISCONNECT" })
     setIsConnected(false)
     setWorkspaceName(null)
+    setIsPro(false)
     setShowSettings(false)
+  }
+
+  const handleActivateLicense = async () => {
+    await loadState()
   }
 
   const handleThemeChange = async (newTheme: "dark" | "light") => {
@@ -139,6 +162,7 @@ function IndexPopup() {
       onDismissTimerChange={handleDismissTimerChange}
       onOpenSettings={handleOpenSettings}
       onCloseSettings={() => setShowSettings(false)}
+      onActivateLicense={handleActivateLicense}
     />
   )
 }

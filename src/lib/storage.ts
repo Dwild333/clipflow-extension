@@ -27,6 +27,7 @@ export interface ClipFlowStorage {
 
   subscription: {
     isPro: boolean
+    licenseKey: string | null
     status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'none'
     currentPeriodEnd: string | null
     lastChecked: string
