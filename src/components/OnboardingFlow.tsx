@@ -14,7 +14,7 @@ const INTRO_STEPS = [
   {
     icon: Clipboard,
     title: 'Copy anything',
-    description: 'Select text on any webpage and press Ctrl+C (or Cmd+C on Mac). The ClipFlow widget will appear.',
+    description: 'Select text on any webpage and press Ctrl+C (or Cmd+C on Mac). The Clipper widget will appear.',
   },
   {
     icon: Zap,
@@ -71,7 +71,10 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
       <div className={`px-4 py-3 flex items-center gap-2.5 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
         <ClipFlowLogo size={28} />
         <div>
-          <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-black'}`}>Welcome to ClipFlow</div>
+          <div className="flex items-baseline gap-1.5">
+              <span className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>
+              <span className={`text-[10px] font-medium tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>by NotionFlow</span>
+            </div>
           <div className="text-[10px] text-gray-500">Connected to {workspaceName || 'your workspace'}</div>
         </div>
       </div>

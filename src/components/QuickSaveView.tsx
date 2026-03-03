@@ -346,12 +346,18 @@ export function QuickSaveView({
           >
             <div className="flex items-center gap-2">
               <ClipFlowLogo size={16} />
-              <span className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>
-                {currentView === 'quick-save' ? 'ClipFlow'
-                  : currentView === 'settings' ? 'Settings'
-                  : currentView === 'destination-picker' ? 'Choose Destination'
-                  : 'Create New Page'}
-              </span>
+              {currentView === 'quick-save' ? (
+                <div className="flex items-baseline gap-1.5">
+                  <span className={`font-bold text-sm tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>
+                  <span className={`text-[10px] font-medium tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>by NotionFlow</span>
+                </div>
+              ) : (
+                <span className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>
+                  {currentView === 'settings' ? 'Settings'
+                    : currentView === 'destination-picker' ? 'Choose Destination'
+                    : 'Create New Page'}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-1">
               {currentView === 'quick-save' && (

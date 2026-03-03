@@ -55,7 +55,7 @@ function showReloadBanner() {
   ].join(';')
   banner.innerHTML = `
     <span>🔄</span>
-    <span style="flex:1">ClipFlow was updated. <strong>Reload this tab</strong> to enable copy detection.</span>
+    <span style="flex:1">Clipper was updated. <strong>Reload this tab</strong> to enable copy detection.</span>
     <button onclick="location.reload()" style="background:#6366F1;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;white-space:nowrap">Reload</button>
     <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;line-height:1">×</button>
   `

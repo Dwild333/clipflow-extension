@@ -1,9 +1,9 @@
 {
-  "name": "clipflow",
-  "displayName": "ClipFlow",
+  "name": "clipper-by-notionflow",
+  "displayName": "Clipper by NotionFlow",
   "version": "1.0.0",
   "description": "Save clipboard text to Notion in 2 clicks — no tab switching.",
-  "author": "ClipFlow",
+  "author": "NotionFlow",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
@@ -57,7 +57,7 @@
           "default": "Ctrl+Shift+N",
           "mac": "Command+Shift+N"
         },
-        "description": "Open ClipFlow widget"
+        "description": "Open Clipper widget"
       }
     }
   }

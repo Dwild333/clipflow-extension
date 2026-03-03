@@ -139,7 +139,10 @@ export function ExtensionPopup({
         <div className="flex items-center gap-2.5">
           <ClipFlowLogo size={28} />
           <div>
-            <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-black'}`}>ClipFlow</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>
+              <span className={`text-[10px] font-medium tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>by NotionFlow</span>
+            </div>
             <div className="flex items-center gap-1.5">
               <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
               <span className="text-[10px] text-gray-500">{isConnected ? 'Connected' : 'Disconnected'}</span>
