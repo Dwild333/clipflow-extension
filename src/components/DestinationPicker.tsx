@@ -59,7 +59,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
             placeholder="Search pages..."
             className={`w-full h-10 pl-10 pr-10 border focus:border-indigo-500/50 rounded-lg text-sm outline-none transition-colors ${
               isDark
-                ? 'bg-[#2A2A2A] border-transparent text-white placeholder:text-gray-600'
+                ? 'bg-[#1A1A1A] border-transparent text-white placeholder:text-gray-600'
                 : 'bg-gray-100 border-transparent text-black placeholder:text-gray-500'
             }`}
             autoFocus
@@ -92,7 +92,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
                 <button
                   key={page.id}
                   onClick={() => onSelect(page)}
-                  className={`w-full h-9 px-3 flex items-center gap-2 rounded-md transition-colors ${isDark ? 'hover:bg-[#3A3A3A]' : 'hover:bg-gray-200'}`}
+                  className={`w-full h-9 px-3 flex items-center gap-2 rounded-md transition-colors ${isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-200'}`}
                 >
                   <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
                   <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>
@@ -119,7 +119,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
       <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`}>
         <button
           onClick={onCreateNew}
-          className={`w-full h-11 px-4 flex items-center gap-2 transition-colors ${isDark ? 'hover:bg-[#3A3A3A]' : 'hover:bg-gray-100'}`}
+          className={`w-full h-11 px-4 flex items-center gap-2 transition-colors ${isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'}`}
         >
           <Plus className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
           <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>Create new page</span>

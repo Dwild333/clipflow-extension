@@ -216,7 +216,7 @@ export function QuickSaveView({
         <>
           {/* Clipboard Preview */}
           <div className="p-4">
-            <div className={`rounded-lg p-3 max-h-[120px] overflow-y-auto ${isDark ? 'bg-[#2A2A2A]/90' : 'bg-gray-100'}`}>
+            <div className={`rounded-lg p-3 max-h-[120px] overflow-y-auto ${isDark ? 'bg-[#1A1A1A]' : 'bg-gray-100'}`}>
               <pre className={`font-mono text-xs whitespace-pre-wrap ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
                 {clipboardContent || 'No content'}
               </pre>
@@ -227,7 +227,7 @@ export function QuickSaveView({
           <div className="px-4 pb-4">
             <button
               onClick={() => { handleInteraction(); navigateTo('destination-picker') }}
-              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#2A2A2A]/50 hover:bg-[#3A3A3A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
             >
               <div className="flex items-center gap-2">
                 <PageIcon emoji={selectedDestination.emoji} iconUrl={selectedDestination.iconUrl} size={20} />
@@ -332,7 +332,7 @@ export function QuickSaveView({
     >
       <div
         className={`w-[360px] backdrop-blur-[20px] border rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden ${
-          isDark ? 'bg-[#1A1A1A]/85 border-white/10' : 'bg-white/90 border-black/10'
+          isDark ? 'bg-[#0D0D0D]/95 border-white/10' : 'bg-white/90 border-black/10'
         }`}
         onClick={(e) => e.stopPropagation()}
       >

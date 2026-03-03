@@ -90,7 +90,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
             placeholder="Untitled..."
             className={`w-full h-10 px-3 border focus:border-indigo-500/50 rounded-lg text-sm outline-none transition-colors ${
               isDark
-                ? 'bg-[#2A2A2A] border-transparent text-white placeholder:text-gray-600'
+                ? 'bg-[#1A1A1A] border-transparent text-white placeholder:text-gray-600'
                 : 'bg-gray-100 border-transparent text-black placeholder:text-gray-500'
             }`}
             autoFocus
@@ -104,7 +104,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
           </label>
           <button
             onClick={() => setShowParentPicker(v => !v)}
-            className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#2A2A2A] hover:bg-[#3A3A3A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+            className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
           >
             <div className="flex items-center gap-2">
               <PageIcon emoji={selectedParent?.emoji ?? '📄'} iconUrl={selectedParent?.iconUrl} size={18} />
@@ -116,7 +116,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
           </button>
 
           {showParentPicker && (
-            <div className={`mt-1 border rounded-lg overflow-hidden ${isDark ? 'bg-[#2A2A2A] border-white/10' : 'bg-white border-black/10'}`}>
+            <div className={`mt-1 border rounded-lg overflow-hidden ${isDark ? 'bg-[#0D0D0D] border-white/10' : 'bg-white border-black/10'}`}>
               {/* Search */}
               <div className={`px-2 py-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
                 <div className="relative">
@@ -146,7 +146,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
                     className={`w-full h-9 px-3 flex items-center gap-2 transition-colors ${
                       selectedParent?.id === page.id
                         ? isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'
-                        : isDark ? 'hover:bg-[#3A3A3A]' : 'hover:bg-gray-100'
+                        : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
                     }`}
                   >
                     <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
