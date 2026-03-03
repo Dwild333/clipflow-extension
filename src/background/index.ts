@@ -67,6 +67,7 @@ async function handleCopyDetected(
       ? {
           id: settings.defaultDestinationId,
           emoji: settings.defaultDestinationEmoji,
+          iconUrl: settings.defaultDestinationIconUrl ?? undefined,
           name: settings.defaultDestinationName,
         }
       : null,

@@ -12,6 +12,7 @@ export interface ClipFlowStorage {
     defaultDestinationId: string | null
     defaultDestinationEmoji: string
     defaultDestinationName: string
+    defaultDestinationIconUrl: string | null
     autoDismiss: boolean
     dismissTimer: number
     widgetEnabled: boolean
@@ -55,6 +56,7 @@ export const DEFAULT_SETTINGS: ClipFlowStorage['settings'] = {
   defaultDestinationId: null,
   defaultDestinationEmoji: '📝',
   defaultDestinationName: 'Choose a page',
+  defaultDestinationIconUrl: null,
   autoDismiss: false,
   dismissTimer: 5,
   widgetEnabled: true,

@@ -57,6 +57,7 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
       defaultDestinationId: selectedPage?.id ?? null,
       defaultDestinationEmoji: selectedPage?.emoji ?? '📝',
       defaultDestinationName: selectedPage?.name ?? 'Choose a page',
+      defaultDestinationIconUrl: selectedPage?.iconUrl ?? null,
     })
     await setStorage('onboardingComplete', true)
     onComplete()

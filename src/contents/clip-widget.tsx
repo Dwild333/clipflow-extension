@@ -27,7 +27,7 @@ interface WidgetState {
   dismissTimer: number
   includeSourceUrl: boolean
   includeDateTime: boolean
-  defaultDestination: { id: string; emoji: string; name: string } | null
+  defaultDestination: { id: string; emoji: string; iconUrl?: string; name: string } | null
 }
 
 export default function ClipWidget() {
@@ -66,7 +66,9 @@ export default function ClipWidget() {
         dismissTimer: settings.dismissTimer,
         includeSourceUrl: settings.includeSourceUrl ?? false,
         includeDateTime: settings.includeDateTime ?? false,
-        defaultDestination: message.defaultDestination ?? null,
+        defaultDestination: message.defaultDestination
+          ? { id: message.defaultDestination.id, emoji: message.defaultDestination.emoji, iconUrl: message.defaultDestination.iconUrl, name: message.defaultDestination.name }
+          : null,
       })
     }
 

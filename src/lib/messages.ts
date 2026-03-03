@@ -23,7 +23,7 @@ export interface ShowWidgetMessage {
   type: 'SHOW_WIDGET'
   text: string
   position: { x: number; y: number }
-  defaultDestination: { id: string; emoji: string; name: string } | null
+  defaultDestination: { id: string; emoji: string; iconUrl?: string; name: string } | null
   settings: {
     theme: 'dark' | 'light'
     autoDismiss: boolean
