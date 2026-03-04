@@ -29,5 +29,10 @@ dist/
 # plasmo
 .plasmo
 
+# next.js (not used — ignore stray artifacts)
+.next/
+next-env.d.ts
+.next/
+
 # typescript
 .tsbuildinfo
