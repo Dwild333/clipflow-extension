@@ -93,5 +93,5 @@ async function exchangeCodeForToken(code: string): Promise<void> {
 
 /** Disconnect — clear all user data from storage */
 export async function disconnectNotion(): Promise<void> {
-  await chrome.storage.local.remove(["auth", "recentSaves", "dailySaves", "subscription", "onboardingComplete"])
+  await chrome.storage.local.remove(["auth", "recentSaves", "license", "usage", "onboardingComplete"])
 }
