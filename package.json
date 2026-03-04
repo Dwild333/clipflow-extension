@@ -44,7 +44,8 @@
       "activeTab",
       "clipboardRead",
       "identity",
-      "scripting"
+      "scripting",
+      "alarms"
     ],
     "host_permissions": [
       "https://api.notion.com/*",
