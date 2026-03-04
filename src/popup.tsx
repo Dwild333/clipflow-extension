@@ -7,7 +7,7 @@ import { getSettings, getStorage, setStorage } from "./lib/storage"
 function IndexPopup() {
   const [isConnected, setIsConnected] = useState(false)
   const [isPro, setIsPro] = useState(false)
-  const [savesToday, setSavesToday] = useState(0)
+  const [savesThisMonth, setSavesThisMonth] = useState(0)
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [widgetEnabled, setWidgetEnabled] = useState(true)
   const [autoDismiss, setAutoDismiss] = useState(false)
@@ -20,17 +20,17 @@ function IndexPopup() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   async function loadState() {
-    const [auth, settings, subscription, dailySaves] = await Promise.all([
+    const [auth, settings, license, usage] = await Promise.all([
       getStorage("auth"),
       getSettings(),
-      getStorage("subscription"),
-      getStorage("dailySaves"),
+      getStorage("license"),
+      getStorage("usage"),
     ])
 
     const connected = !!auth?.accessToken
     setIsConnected(connected)
     setWorkspaceName(auth?.workspaceName ?? null)
-    setIsPro(subscription?.isPro ?? false)
+    setIsPro(!!(license?.is_pro && (license.expires_at === 0 || license.expires_at > Date.now())))
     setTheme(settings.theme)
     setWidgetEnabled(settings.widgetEnabled)
     setAutoDismiss(settings.autoDismiss ?? false)
@@ -38,8 +38,8 @@ function IndexPopup() {
     setIncludeSourceUrl(settings.includeSourceUrl ?? false)
     setIncludeDateTime(settings.includeDateTime ?? false)
 
-    const today = new Date().toISOString().split("T")[0]
-    setSavesToday(dailySaves?.date === today ? dailySaves.count : 0)
+    const currentMonth = new Date().toISOString().slice(0, 7)
+    setSavesThisMonth(usage?.month === currentMonth ? usage.saves_this_month : 0)
 
     const onboardingComplete = await getStorage("onboardingComplete")
     if (connected && !onboardingComplete) {
@@ -50,25 +50,7 @@ function IndexPopup() {
   }
 
   useEffect(() => {
-    loadState().then(async () => {
-      const sub = await getStorage("subscription")
-      if (!sub?.isPro || !sub?.licenseKey) return
-      try {
-        const auth = await getStorage("auth")
-        const res = await fetch("https://clipper-api.vercel.app/api/verify-license", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ licenseKey: sub.licenseKey, workspaceId: auth?.workspaceId }),
-        })
-        const data = await res.json() as { valid: boolean }
-        if (!data.valid) {
-          await chrome.storage.local.set({ subscription: { ...sub, isPro: false } })
-          setIsPro(false)
-        }
-      } catch {
-        // Network failure — keep local isPro as-is, don't downgrade offline users
-      }
-    })
+    loadState()
   }, [])
 
   const handleToggleWidget = async (enabled: boolean) => {
@@ -92,9 +74,6 @@ function IndexPopup() {
     setShowSettings(false)
   }
 
-  const handleActivateLicense = async () => {
-    await loadState()
-  }
 
   const handleThemeChange = async (newTheme: "dark" | "light") => {
     setTheme(newTheme)
@@ -145,8 +124,8 @@ function IndexPopup() {
       theme={theme}
       isConnected={isConnected}
       isPro={isPro}
-      savesToday={savesToday}
-      dailyLimit={10}
+      savesToday={savesThisMonth}
+      dailyLimit={75}
       widgetEnabled={widgetEnabled}
       workspaceName={workspaceName}
       showSettings={showSettings}
@@ -162,7 +141,6 @@ function IndexPopup() {
       onDismissTimerChange={handleDismissTimerChange}
       onOpenSettings={handleOpenSettings}
       onCloseSettings={() => setShowSettings(false)}
-      onActivateLicense={handleActivateLicense}
     />
   )
 }

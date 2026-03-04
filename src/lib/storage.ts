@@ -25,17 +25,17 @@ export interface ClipFlowStorage {
     newPageParentIconUrl: string | null
   }
 
-  subscription: {
-    isPro: boolean
-    licenseKey: string | null
-    status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'none'
-    currentPeriodEnd: string | null
-    lastChecked: string
+  license: {
+    email: string | null
+    is_pro: boolean
+    plan: string | null
+    verified_at: number
+    expires_at: number
   }
 
-  dailySaves: {
-    date: string
-    count: number
+  usage: {
+    saves_this_month: number
+    month: string
   }
 
   recentSaves: Array<{

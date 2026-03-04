@@ -1,10 +1,40 @@
 import { getSettings, getStorage, setStorage } from "../lib/storage"
 import { launchNotionOAuth, disconnectNotion } from "../lib/oauth"
-import { appendTextToPage, incrementDailySaves, recordRecentSave, searchNotionPages, createNotionPage } from "../lib/notion"
+import { appendTextToPage, recordRecentSave, searchNotionPages, createNotionPage } from "../lib/notion"
+import { canSave, incrementSaveCount } from "../lib/limits"
+import { verifyLicense, saveLicenseToStorage, getLicenseFromStorage } from "../lib/license"
 import type { ExtensionMessage, ShowWidgetMessage, SaveResultMessage } from "../lib/messages"
 
 // Open uninstall feedback survey when the extension is removed
 chrome.runtime.setUninstallURL("https://clipflow.tools/uninstall")
+
+// ─── Background License Verification ────────────────────────────────────────
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.alarms.create('verify-license', { periodInMinutes: 1440 })
+  verifyLicenseInBackground()
+})
+
+chrome.runtime.onStartup.addListener(() => {
+  verifyLicenseInBackground()
+})
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'verify-license') {
+    await verifyLicenseInBackground()
+  }
+})
+
+async function verifyLicenseInBackground() {
+  const license = await getLicenseFromStorage()
+  if (!license?.email) return
+  try {
+    const status = await verifyLicense(license.email)
+    await saveLicenseToStorage(license.email, status)
+  } catch {
+    // Network failure — keep cached status
+  }
+}
 
 // ─── Message Router ──────────────────────────────────────────────────────────
 
@@ -88,14 +118,9 @@ async function handleSaveToNotion(
   _tabId: number | undefined
 ): Promise<SaveResultMessage> {
   try {
-    const subscription = await getStorage("subscription")
-    const dailySaves = await getStorage("dailySaves")
-    const today = new Date().toISOString().split("T")[0]
-    const savesToday = dailySaves?.date === today ? dailySaves.count : 0
-    const FREE_LIMIT = 10
-
-    if (!subscription?.isPro && savesToday >= FREE_LIMIT) {
-      return { type: "SAVE_RESULT", success: false, error: "Daily limit reached. Upgrade to Pro for unlimited saves." }
+    const check = await canSave()
+    if (!check.allowed) {
+      return { type: "SAVE_RESULT", success: false, error: check.reason ?? "Monthly limit reached. Upgrade to Pro for unlimited saves." }
     }
 
     const settings = await getSettings()
@@ -103,7 +128,7 @@ async function handleSaveToNotion(
       sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
       includeDateTime: settings.includeDateTime,
     })
-    await incrementDailySaves()
+    await incrementSaveCount()
     await recordRecentSave({
       text: message.text,
       destinationId: message.destinationId,

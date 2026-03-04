@@ -403,35 +403,60 @@ function SettingsView({
 }: SettingsViewProps) {
   const isDark = theme !== 'light'
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
-  const [licenseInput, setLicenseInput] = useState('')
-  const [activating, setActivating] = useState(false)
-  const [activateError, setActivateError] = useState<string | null>(null)
+  const [emailInput, setEmailInput] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState<string | null>(null)
 
-  const handleActivate = async () => {
-    const key = licenseInput.trim().toUpperCase()
-    if (!key) return
-    setActivating(true)
-    setActivateError(null)
+  const handleVerify = async () => {
+    const email = emailInput.trim().toLowerCase()
+    if (!email) return
+    setVerifying(true)
+    setVerifyError(null)
     try {
-      const auth = await chrome.storage.local.get('auth')
-      const workspaceId = auth?.auth?.workspaceId
-      const res = await fetch('https://clipper-api.vercel.app/api/activate-license', {
+      const res = await fetch('https://www.notionflow.io/api/license/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ licenseKey: key, workspaceId }),
+        body: JSON.stringify({ email, app_id: 'clipper' }),
       })
-      const data = await res.json() as { valid: boolean; error?: string }
-      if (data.valid) {
-        await chrome.storage.local.set({ subscription: { isPro: true, licenseKey: key, status: 'active', currentPeriodEnd: null, lastChecked: new Date().toISOString() } })
-        setLicenseInput('')
-        onActivateLicense?.()
+      const data = await res.json() as { is_pro: boolean; plan: string | null; current_period_end: string | null; error?: string }
+      if (!res.ok) throw new Error(data.error ?? 'Verification failed')
+      if (!data.is_pro) {
+        setVerifyError('No active Pro subscription found for this email.')
       } else {
-        setActivateError(data.error ?? 'Invalid license key')
+        await chrome.storage.local.set({
+          license: {
+            email,
+            is_pro: true,
+            plan: data.plan,
+            verified_at: Date.now(),
+            expires_at: data.current_period_end ? new Date(data.current_period_end).getTime() : 0,
+          },
+        })
+        setEmailInput('')
+        onActivateLicense?.()
       }
-    } catch {
-      setActivateError('Could not connect — check your internet connection')
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : 'Could not connect — check your internet connection')
     } finally {
-      setActivating(false)
+      setVerifying(false)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    const result = await chrome.storage.local.get('license')
+    const email = result?.license?.email
+    if (!email) return
+    try {
+      const res = await fetch('https://www.notionflow.io/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, app_id: 'clipper' }),
+      })
+      const data = await res.json() as { url: string }
+      chrome.tabs.create({ url: data.url })
+    } catch {
+      // fallback
+      chrome.tabs.create({ url: 'https://www.notionflow.io/account' })
     }
   }
   return (
@@ -510,33 +535,33 @@ function SettingsView({
             <div className="text-[10px] uppercase tracking-wider text-gray-500">Subscription</div>
             <div className={`rounded-lg p-3 ${isDark ? 'bg-[#1A1A1A]' : 'bg-gray-100'}`}>
               {isPro ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-amber-400 shrink-0" />
-                    <div>
-                      <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Pro Plan</div>
-                      <div className="text-gray-500 text-xs">Unlimited saves</div>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                      <div>
+                        <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Pro Plan</div>
+                        <div className="text-gray-500 text-xs">Unlimited saves</div>
+                      </div>
                     </div>
+                    <button
+                      onClick={handleManageSubscription}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      <span>Manage</span>
+                    </button>
                   </div>
-                  <a
-                    href="https://notionflow.tools/support"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
-                  >
-                    <CreditCard className="w-3 h-3" />
-                    <span>Support</span>
-                  </a>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Free Plan</div>
-                      <div className="text-gray-500 text-xs">10 saves / day</div>
+                      <div className="text-gray-500 text-xs">75 saves / month</div>
                     </div>
                     <a
-                      href="https://notionflow.tools/clipper"
+                      href="https://www.notionflow.io/#pricing"
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
@@ -546,30 +571,29 @@ function SettingsView({
                     </a>
                   </div>
                   <div className={`border-t pt-3 ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-                    <div className={`text-[11px] mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Have a license key?</div>
+                    <div className={`text-[11px] mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Already purchased? Enter your email:</div>
                     <div className="flex gap-2">
                       <input
-                        type="text"
-                        value={licenseInput}
-                        onChange={e => { setLicenseInput(e.target.value.toUpperCase()); setActivateError(null) }}
-                        onKeyDown={e => e.key === 'Enter' && handleActivate()}
-                        placeholder="CLIP-XXXX-XXXX-XXXX"
-                        spellCheck={false}
-                        className={`flex-1 h-8 px-2.5 rounded-md text-xs font-mono outline-none border transition-colors ${
+                        type="email"
+                        value={emailInput}
+                        onChange={e => { setEmailInput(e.target.value); setVerifyError(null) }}
+                        onKeyDown={e => e.key === 'Enter' && handleVerify()}
+                        placeholder="you@email.com"
+                        className={`flex-1 h-8 px-2.5 rounded-md text-xs outline-none border transition-colors ${
                           isDark
                             ? 'bg-[#0D0D0D] border-white/10 text-white placeholder:text-gray-600 focus:border-indigo-500/50'
                             : 'bg-white border-black/10 text-black placeholder:text-gray-400 focus:border-indigo-400'
                         }`}
                       />
                       <button
-                        onClick={handleActivate}
-                        disabled={activating || !licenseInput.trim()}
+                        onClick={handleVerify}
+                        disabled={verifying || !emailInput.trim()}
                         className="h-8 px-3 text-xs font-medium bg-indigo-500 hover:brightness-110 disabled:opacity-50 text-white rounded-md transition-all flex items-center gap-1.5"
                       >
-                        {activating ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Activate'}
+                        {verifying ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Verify'}
                       </button>
                     </div>
-                    {activateError && <div className="mt-2 text-[11px] text-red-400">{activateError}</div>}
+                    {verifyError && <div className="mt-2 text-[11px] text-red-400">{verifyError}</div>}
                   </div>
                 </div>
               )}
