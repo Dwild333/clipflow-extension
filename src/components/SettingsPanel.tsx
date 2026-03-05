@@ -213,7 +213,7 @@ export function SettingsPanel({
             <div>
               <div className="text-xs text-gray-500 mb-2">Dismiss after {dismissTimer}s</div>
               <input
-                type="range" min="3" max="30" value={dismissTimer}
+                type="range" min="3" max="10" value={dismissTimer}
                 onChange={(e) => onDismissTimerChange?.(Number(e.target.value))}
                 className={`w-full h-2 rounded-lg appearance-none cursor-pointer
                   [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4
