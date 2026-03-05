@@ -44,7 +44,6 @@
       "activeTab",
       "clipboardRead",
       "identity",
-      "scripting",
       "alarms"
     ],
     "host_permissions": [
