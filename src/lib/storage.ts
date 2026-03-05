@@ -19,6 +19,7 @@ export interface ClipFlowStorage {
     favoritePageIds: string[]
     includeSourceUrl: boolean
     includeDateTime: boolean
+    includeStamp: boolean
     newPageParentId: string | null
     newPageParentEmoji: string
     newPageParentName: string
@@ -64,6 +65,7 @@ export const DEFAULT_SETTINGS: ClipFlowStorage['settings'] = {
   favoritePageIds: [],
   includeSourceUrl: false,
   includeDateTime: false,
+  includeStamp: false,
   newPageParentId: null,
   newPageParentEmoji: '📄',
   newPageParentName: 'Choose a parent page',

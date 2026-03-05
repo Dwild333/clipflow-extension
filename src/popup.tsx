@@ -14,6 +14,7 @@ function IndexPopup() {
   const [dismissTimer, setDismissTimer] = useState(5)
   const [includeSourceUrl, setIncludeSourceUrl] = useState(false)
   const [includeDateTime, setIncludeDateTime] = useState(false)
+  const [includeStamp, setIncludeStamp] = useState(false)
   const [loading, setLoading] = useState(true)
   const [workspaceName, setWorkspaceName] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -37,6 +38,7 @@ function IndexPopup() {
     setDismissTimer(settings.dismissTimer ?? 5)
     setIncludeSourceUrl(settings.includeSourceUrl ?? false)
     setIncludeDateTime(settings.includeDateTime ?? false)
+    setIncludeStamp(settings.includeStamp ?? false)
 
     const currentMonth = new Date().toISOString().slice(0, 7)
     setSavesThisMonth(usage?.month === currentMonth ? usage.saves_this_month : 0)
@@ -81,10 +83,11 @@ function IndexPopup() {
     await setStorage("settings", { ...settings, theme: newTheme })
   }
 
-  const handleSettingToggle = async (key: "autoDismiss" | "includeSourceUrl" | "includeDateTime", value: boolean) => {
+  const handleSettingToggle = async (key: "autoDismiss" | "includeSourceUrl" | "includeDateTime" | "includeStamp", value: boolean) => {
     if (key === "autoDismiss") setAutoDismiss(value)
     if (key === "includeSourceUrl") setIncludeSourceUrl(value)
     if (key === "includeDateTime") setIncludeDateTime(value)
+    if (key === "includeStamp") setIncludeStamp(value)
     const settings = await getSettings()
     await setStorage("settings", { ...settings, [key]: value })
   }
@@ -133,6 +136,7 @@ function IndexPopup() {
       dismissTimer={dismissTimer}
       includeSourceUrl={includeSourceUrl}
       includeDateTime={includeDateTime}
+      includeStamp={includeStamp}
       onToggleWidget={handleToggleWidget}
       onReconnect={handleReconnect}
       onDisconnect={handleDisconnect}

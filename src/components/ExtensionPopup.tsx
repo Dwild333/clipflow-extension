@@ -16,11 +16,12 @@ interface ExtensionPopupProps {
   dismissTimer?: number
   includeSourceUrl?: boolean
   includeDateTime?: boolean
+  includeStamp?: boolean
   onToggleWidget?: (enabled: boolean) => void
   onOpenSettings?: () => void
   onCloseSettings?: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
-  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime', value: boolean) => void
+  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp', value: boolean) => void
   onDismissTimerChange?: (value: number) => void
   onDisconnect?: () => void
   onReconnect?: () => void
@@ -53,7 +54,7 @@ export function ExtensionPopup({
   isConnected = true,
   isPro = false,
   savesToday = 7,
-  dailyLimit = 10,
+  dailyLimit = 75,
   widgetEnabled = true,
   workspaceName,
   showSettings = false,
@@ -61,6 +62,7 @@ export function ExtensionPopup({
   dismissTimer = 5,
   includeSourceUrl = false,
   includeDateTime = false,
+  includeStamp = false,
   onToggleWidget,
   onOpenSettings,
   onCloseSettings,
@@ -124,6 +126,7 @@ export function ExtensionPopup({
           dismissTimer={dismissTimer}
           includeSourceUrl={includeSourceUrl}
           includeDateTime={includeDateTime}
+          includeStamp={includeStamp}
           onBack={onCloseSettings!}
           onThemeChange={onThemeChange}
           onSettingToggle={onSettingToggle}
@@ -203,8 +206,8 @@ export function ExtensionPopup({
           {!isPro && (
             <div className="mx-4 mt-3">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] text-gray-500">{savesToday} of {dailyLimit} saves today</span>
-                <span className={`text-[10px] ${savesRemaining <= 2 ? 'text-amber-400' : 'text-gray-500'}`}>{savesRemaining} remaining</span>
+                <span className="text-[10px] text-gray-500">{savesToday} of {dailyLimit} saves this month</span>
+                <span className={`text-[10px] ${savesRemaining <= 5 ? 'text-amber-400' : 'text-gray-500'}`}>{savesRemaining} remaining</span>
               </div>
               <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-200'}`}>
                 <div
@@ -312,7 +315,7 @@ export function ExtensionPopup({
               </div>
             ) : (
               <a
-                href="https://clipflow.tools/upgrade"
+                href="https://www.notionflow.io/#pricing"
                 target="_blank"
                 rel="noreferrer"
                 className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between transition-colors ${isDark ? 'bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20' : 'bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'}`}
@@ -355,9 +358,10 @@ interface SettingsViewProps {
   dismissTimer?: number
   includeSourceUrl?: boolean
   includeDateTime?: boolean
+  includeStamp?: boolean
   onBack: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
-  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime', value: boolean) => void
+  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp', value: boolean) => void
   onDismissTimerChange?: (value: number) => void
   onDisconnect?: () => void
   onActivateLicense?: () => void
@@ -394,6 +398,7 @@ function SettingsView({
   dismissTimer = 5,
   includeSourceUrl = false,
   includeDateTime = false,
+  includeStamp = false,
   onBack,
   onThemeChange,
   onSettingToggle,
@@ -502,6 +507,9 @@ function SettingsView({
             <SettingsRow label="Include date & time" desc="Append timestamp below saved text" isDark={isDark}>
               <Toggle on={includeDateTime} onToggle={() => onSettingToggle?.('includeDateTime', !includeDateTime)} isDark={isDark} />
             </SettingsRow>
+            <SettingsRow label="Clipper stamp" desc="Append 'Saved with Clipper by NotionFlow'" isDark={isDark}>
+              <Toggle on={includeStamp} onToggle={() => onSettingToggle?.('includeStamp', !includeStamp)} isDark={isDark} />
+            </SettingsRow>
           </section>
 
           <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
@@ -533,6 +541,13 @@ function SettingsView({
           {/* Subscription */}
           <section className="space-y-3">
             <div className="text-[10px] uppercase tracking-wider text-gray-500">Subscription</div>
+            {!isPro && (
+              <div className={`rounded-lg px-3 py-2.5 text-xs ${isDark ? 'bg-[#1A1A1A] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                After purchasing,{' '}
+                <span className={`font-medium ${isDark ? 'text-white' : 'text-black'}`}>enter your email below</span>
+                {' '}to activate Pro.
+              </div>
+            )}
             <div className={`rounded-lg p-3 ${isDark ? 'bg-[#1A1A1A]' : 'bg-gray-100'}`}>
               {isPro ? (
                 <div className="space-y-2.5">

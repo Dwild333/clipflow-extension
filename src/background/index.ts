@@ -127,6 +127,7 @@ async function handleSaveToNotion(
     await appendTextToPage(message.destinationId, message.text, {
       sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
       includeDateTime: settings.includeDateTime,
+      includeStamp: settings.includeStamp,
     })
     await incrementSaveCount()
     await recordRecentSave({

@@ -68,7 +68,7 @@ async function appendBlocksBatched(pageId: string, blocks: object[], headers: He
 export async function appendTextToPage(
   pageId: string,
   text: string,
-  options?: { sourceUrl?: string; includeDateTime?: boolean }
+  options?: { sourceUrl?: string; includeDateTime?: boolean; includeStamp?: boolean }
 ): Promise<void> {
   const headers = await notionHeaders()
 
@@ -88,6 +88,17 @@ export async function appendTextToPage(
       type: "paragraph",
       paragraph: {
         rich_text: [{ type: "text", text: { content: metaParts.join("  ·  ") }, annotations: { color: "gray" } }],
+      },
+    })
+  }
+
+  // Optional Clipper stamp
+  if (options?.includeStamp) {
+    children.push({
+      object: "block",
+      type: "paragraph",
+      paragraph: {
+        rich_text: [{ type: "text", text: { content: "Saved with Clipper by NotionFlow" }, annotations: { color: "gray", italic: true } }],
       },
     })
   }
@@ -126,14 +137,6 @@ export async function createNotionPage(
   }
   const data = await res.json() as NotionAPIPage
   return pageFromAPI(data)
-}
-
-/** Increment the daily save counter in chrome.storage */
-export async function incrementDailySaves(): Promise<void> {
-  const today = new Date().toISOString().split("T")[0]
-  const existing = await getStorage("dailySaves")
-  const count = existing?.date === today ? existing.count + 1 : 1
-  await setStorage("dailySaves", { date: today, count })
 }
 
 /** Record a save in recent saves list (max 50) */
