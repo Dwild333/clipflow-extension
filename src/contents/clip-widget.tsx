@@ -72,9 +72,16 @@ export default function ClipWidget() {
         includeDateTime: settings.includeDateTime ?? false,
         includeStamp: settings.includeStamp ?? false,
         defaultDestinationMode: settings.defaultDestinationMode ?? 'fixed',
-        defaultDestination: message.defaultDestination
-          ? { id: message.defaultDestination.id, emoji: message.defaultDestination.emoji, iconUrl: message.defaultDestination.iconUrl, name: message.defaultDestination.name }
-          : null,
+        defaultDestination: (() => {
+          const mode = settings.defaultDestinationMode ?? 'fixed'
+          if (mode === 'last-saved' && settings.lastSavedDestinationId) {
+            return { id: settings.lastSavedDestinationId, emoji: settings.lastSavedDestinationEmoji, iconUrl: settings.lastSavedDestinationIconUrl ?? undefined, name: settings.lastSavedDestinationName }
+          }
+          if (mode === 'fixed' && settings.defaultDestinationId) {
+            return { id: settings.defaultDestinationId, emoji: settings.defaultDestinationEmoji, iconUrl: settings.defaultDestinationIconUrl ?? undefined, name: settings.defaultDestinationName }
+          }
+          return null
+        })(),
       })
     }
 
