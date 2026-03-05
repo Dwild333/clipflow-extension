@@ -204,12 +204,15 @@ export function ExtensionPopup({
 
           {/* Usage Stats (Free tier only) */}
           {!isPro && (
-            <div className="mx-4 mt-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] text-gray-500">{savesToday} of {dailyLimit} saves this month</span>
-                <span className={`text-[10px] ${savesRemaining <= 5 ? 'text-amber-400' : 'text-gray-500'}`}>{savesRemaining} remaining</span>
+            <div className={`mx-4 mt-3 rounded-xl p-3 ${isDark ? 'bg-[#2A2A2A]/80' : 'bg-gray-50'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-base font-bold ${savePercentage >= 90 ? 'text-red-400' : savePercentage >= 70 ? 'text-amber-400' : isDark ? 'text-white' : 'text-black'}`}>{savesToday}</span>
+                  <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/ {dailyLimit} saves this month</span>
+                </div>
+                <span className={`text-xs font-medium ${savesRemaining <= 5 ? 'text-amber-400' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>{savesRemaining} left</span>
               </div>
-              <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-200'}`}>
+              <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-[#1A1A1A]' : 'bg-gray-200'}`}>
                 <div
                   className={`h-full rounded-full transition-all ${savePercentage >= 90 ? 'bg-red-500' : savePercentage >= 70 ? 'bg-amber-500' : 'bg-indigo-500'}`}
                   style={{ width: `${Math.min(savePercentage, 100)}%` }}
@@ -541,13 +544,6 @@ function SettingsView({
           {/* Subscription */}
           <section className="space-y-3">
             <div className="text-[10px] uppercase tracking-wider text-gray-500">Subscription</div>
-            {!isPro && (
-              <div className={`rounded-lg px-3 py-2.5 text-xs ${isDark ? 'bg-[#1A1A1A] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
-                After purchasing,{' '}
-                <span className={`font-medium ${isDark ? 'text-white' : 'text-black'}`}>enter your email below</span>
-                {' '}to activate Pro.
-              </div>
-            )}
             <div className={`rounded-lg p-3 ${isDark ? 'bg-[#1A1A1A]' : 'bg-gray-100'}`}>
               {isPro ? (
                 <div className="space-y-2.5">

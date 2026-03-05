@@ -14,8 +14,10 @@ interface SettingsPanelProps {
   onDismissTimerChange?: (seconds: number) => void
   includeSourceUrl?: boolean
   includeDateTime?: boolean
+  includeStamp?: boolean
   onIncludeSourceUrlChange?: (v: boolean) => void
   onIncludeDateTimeChange?: (v: boolean) => void
+  onIncludeStampChange?: (v: boolean) => void
 }
 
 const HISTORY_PREVIEW = 5
@@ -62,8 +64,10 @@ export function SettingsPanel({
   onDismissTimerChange,
   includeSourceUrl = false,
   includeDateTime = false,
+  includeStamp = false,
   onIncludeSourceUrlChange,
   onIncludeDateTimeChange,
+  onIncludeStampChange,
 }: SettingsPanelProps) {
   const [notionPages, setNotionPages] = useState<NotionPage[]>([])
   const [pagesLoading, setPagesLoading] = useState(false)
@@ -183,6 +187,11 @@ export function SettingsPanel({
             'Include date & time',
             'Append timestamp below saved text',
             <Toggle on={includeDateTime} onToggle={() => onIncludeDateTimeChange?.(!includeDateTime)} isDark={isDark} />
+          )}
+          {row(
+            'Clipper stamp',
+            "Append 'Saved with Clipper by NotionFlow'",
+            <Toggle on={includeStamp} onToggle={() => onIncludeStampChange?.(!includeStamp)} isDark={isDark} />
           )}
         </section>
 

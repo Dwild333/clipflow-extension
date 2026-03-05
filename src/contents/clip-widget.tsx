@@ -27,6 +27,7 @@ interface WidgetState {
   dismissTimer: number
   includeSourceUrl: boolean
   includeDateTime: boolean
+  includeStamp: boolean
   defaultDestination: { id: string; emoji: string; iconUrl?: string; name: string } | null
 }
 
@@ -41,6 +42,7 @@ export default function ClipWidget() {
     dismissTimer: 5,
     includeSourceUrl: false,
     includeDateTime: false,
+    includeStamp: false,
     defaultDestination: null,
   })
 
@@ -66,6 +68,7 @@ export default function ClipWidget() {
         dismissTimer: settings.dismissTimer,
         includeSourceUrl: settings.includeSourceUrl ?? false,
         includeDateTime: settings.includeDateTime ?? false,
+        includeStamp: settings.includeStamp ?? false,
         defaultDestination: message.defaultDestination
           ? { id: message.defaultDestination.id, emoji: message.defaultDestination.emoji, iconUrl: message.defaultDestination.iconUrl, name: message.defaultDestination.name }
           : null,
@@ -118,8 +121,10 @@ export default function ClipWidget() {
       onDismissTimerChange={(dismissTimer) => { setWidget((prev) => ({ ...prev, dismissTimer })); persistSettings({ dismissTimer }) }}
       includeSourceUrl={widget.includeSourceUrl}
       includeDateTime={widget.includeDateTime}
+      includeStamp={widget.includeStamp}
       onIncludeSourceUrlChange={(includeSourceUrl) => { setWidget((prev) => ({ ...prev, includeSourceUrl })); persistSettings({ includeSourceUrl }) }}
       onIncludeDateTimeChange={(includeDateTime) => { setWidget((prev) => ({ ...prev, includeDateTime })); persistSettings({ includeDateTime }) }}
+      onIncludeStampChange={(includeStamp) => { setWidget((prev) => ({ ...prev, includeStamp })); persistSettings({ includeStamp }) }}
       defaultDestination={widget.defaultDestination}
     />
   )
