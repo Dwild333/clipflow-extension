@@ -18,6 +18,8 @@ interface SettingsPanelProps {
   onIncludeSourceUrlChange?: (v: boolean) => void
   onIncludeDateTimeChange?: (v: boolean) => void
   onIncludeStampChange?: (v: boolean) => void
+  defaultDestinationMode?: 'fixed' | 'last-saved'
+  onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
 }
 
 const HISTORY_PREVIEW = 5
@@ -68,6 +70,8 @@ export function SettingsPanel({
   onIncludeSourceUrlChange,
   onIncludeDateTimeChange,
   onIncludeStampChange,
+  defaultDestinationMode = 'fixed',
+  onDefaultDestinationModeChange,
 }: SettingsPanelProps) {
   const [notionPages, setNotionPages] = useState<NotionPage[]>([])
   const [pagesLoading, setPagesLoading] = useState(false)
@@ -223,9 +227,34 @@ export function SettingsPanel({
 
         <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
 
-        {/* ── Default Parent Page ── */}
+        {/* ── Default Destination ── */}
         <section className="space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-gray-500">New Page Location</div>
+          <div className="text-[10px] uppercase tracking-wider text-gray-500">Default Destination</div>
+          {/* Mode selector */}
+          <div className={`flex rounded-lg overflow-hidden border ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+            <button
+              onClick={() => onDefaultDestinationModeChange?.('fixed')}
+              className={`flex-1 h-8 text-xs font-medium transition-colors ${
+                defaultDestinationMode === 'fixed'
+                  ? 'bg-indigo-500 text-white'
+                  : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+              }`}
+            >Fixed page</button>
+            <button
+              onClick={() => onDefaultDestinationModeChange?.('last-saved')}
+              className={`flex-1 h-8 text-xs font-medium transition-colors ${
+                defaultDestinationMode === 'last-saved'
+                  ? 'bg-indigo-500 text-white'
+                  : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+              }`}
+            >Last saved</button>
+          </div>
+          {defaultDestinationMode === 'last-saved' ? (
+            <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-[#1A1A1A] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+              Widget will pre-fill with the last page you saved to.
+            </div>
+          ) : (
+            <>
           <div className="text-xs text-gray-500">Where new pages are created by default</div>
           <button
             onClick={() => setShowParentPicker(v => !v)}
@@ -278,6 +307,8 @@ export function SettingsPanel({
                 ))}
               </div>
             </div>
+          )}
+            </>
           )}
         </section>
 

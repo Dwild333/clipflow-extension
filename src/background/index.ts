@@ -89,18 +89,30 @@ async function handleCopyDetected(
   const auth = await getStorage("auth")
   if (!auth?.accessToken) return
 
+  // Pick default destination based on mode
+  const mode = settings.defaultDestinationMode ?? 'fixed'
+  let defaultDestination: ShowWidgetMessage['defaultDestination'] = null
+  if (mode === 'last-saved' && settings.lastSavedDestinationId) {
+    defaultDestination = {
+      id: settings.lastSavedDestinationId,
+      emoji: settings.lastSavedDestinationEmoji,
+      iconUrl: settings.lastSavedDestinationIconUrl ?? undefined,
+      name: settings.lastSavedDestinationName,
+    }
+  } else if (mode === 'fixed' && settings.defaultDestinationId) {
+    defaultDestination = {
+      id: settings.defaultDestinationId,
+      emoji: settings.defaultDestinationEmoji,
+      iconUrl: settings.defaultDestinationIconUrl ?? undefined,
+      name: settings.defaultDestinationName,
+    }
+  }
+
   const showMessage: ShowWidgetMessage = {
     type: "SHOW_WIDGET",
     text: message.text,
     position: message.position,
-    defaultDestination: settings.defaultDestinationId
-      ? {
-          id: settings.defaultDestinationId,
-          emoji: settings.defaultDestinationEmoji,
-          iconUrl: settings.defaultDestinationIconUrl ?? undefined,
-          name: settings.defaultDestinationName,
-        }
-      : null,
+    defaultDestination,
     settings: {
       theme: settings.theme,
       autoDismiss: settings.autoDismiss,
@@ -130,6 +142,15 @@ async function handleSaveToNotion(
       includeStamp: settings.includeStamp,
     })
     await incrementSaveCount()
+    // Update last-saved destination
+    const currentSettings = await getSettings()
+    await setStorage('settings', {
+      ...currentSettings,
+      lastSavedDestinationId: message.destinationId,
+      lastSavedDestinationEmoji: message.destinationEmoji,
+      lastSavedDestinationName: message.destinationName,
+      lastSavedDestinationIconUrl: message.destinationIconUrl ?? null,
+    })
     await recordRecentSave({
       text: message.text,
       destinationId: message.destinationId,

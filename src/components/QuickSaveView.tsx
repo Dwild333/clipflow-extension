@@ -24,9 +24,11 @@ interface QuickSaveViewProps {
   includeSourceUrl?: boolean
   includeDateTime?: boolean
   includeStamp?: boolean
+  defaultDestinationMode?: 'fixed' | 'last-saved'
   onIncludeSourceUrlChange?: (v: boolean) => void
   onIncludeDateTimeChange?: (v: boolean) => void
   onIncludeStampChange?: (v: boolean) => void
+  onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
   defaultDestination?: { id: string; emoji: string; iconUrl?: string; name: string } | null
   preview?: boolean
 }
@@ -56,9 +58,11 @@ export function QuickSaveView({
   includeSourceUrl = false,
   includeDateTime = false,
   includeStamp = false,
+  defaultDestinationMode = 'fixed',
   onIncludeSourceUrlChange,
   onIncludeDateTimeChange,
   onIncludeStampChange,
+  onDefaultDestinationModeChange,
   defaultDestination,
   preview,
 }: QuickSaveViewProps) {
@@ -201,9 +205,11 @@ export function QuickSaveView({
           includeSourceUrl={includeSourceUrl}
           includeDateTime={includeDateTime}
           includeStamp={includeStamp}
+          defaultDestinationMode={defaultDestinationMode}
           onIncludeSourceUrlChange={onIncludeSourceUrlChange}
           onIncludeDateTimeChange={onIncludeDateTimeChange}
           onIncludeStampChange={onIncludeStampChange}
+          onDefaultDestinationModeChange={onDefaultDestinationModeChange}
         />
       ),
       'create-page': (

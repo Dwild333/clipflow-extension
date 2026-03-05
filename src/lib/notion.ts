@@ -190,9 +190,9 @@ interface NotionAPIPage {
 function pageFromAPI(page: NotionAPIPage): NotionPage {
   const iconType = page.icon?.type
   const emoji = iconType === "emoji" ? (page.icon?.emoji ?? "📄") : "📄"
+  // Only use external URLs — file-type icons are signed S3 URLs that expire
   const iconUrl =
     iconType === "external" ? page.icon?.external?.url
-    : iconType === "file" ? page.icon?.file?.url
     : undefined
   const titleArr =
     page.properties?.title?.title ??

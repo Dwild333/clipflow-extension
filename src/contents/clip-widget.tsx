@@ -28,6 +28,7 @@ interface WidgetState {
   includeSourceUrl: boolean
   includeDateTime: boolean
   includeStamp: boolean
+  defaultDestinationMode: 'fixed' | 'last-saved'
   defaultDestination: { id: string; emoji: string; iconUrl?: string; name: string } | null
 }
 
@@ -43,6 +44,7 @@ export default function ClipWidget() {
     includeSourceUrl: false,
     includeDateTime: false,
     includeStamp: false,
+    defaultDestinationMode: 'fixed' as const,
     defaultDestination: null,
   })
 
@@ -69,6 +71,7 @@ export default function ClipWidget() {
         includeSourceUrl: settings.includeSourceUrl ?? false,
         includeDateTime: settings.includeDateTime ?? false,
         includeStamp: settings.includeStamp ?? false,
+        defaultDestinationMode: settings.defaultDestinationMode ?? 'fixed',
         defaultDestination: message.defaultDestination
           ? { id: message.defaultDestination.id, emoji: message.defaultDestination.emoji, iconUrl: message.defaultDestination.iconUrl, name: message.defaultDestination.name }
           : null,
@@ -122,9 +125,11 @@ export default function ClipWidget() {
       includeSourceUrl={widget.includeSourceUrl}
       includeDateTime={widget.includeDateTime}
       includeStamp={widget.includeStamp}
+      defaultDestinationMode={widget.defaultDestinationMode}
       onIncludeSourceUrlChange={(includeSourceUrl) => { setWidget((prev) => ({ ...prev, includeSourceUrl })); persistSettings({ includeSourceUrl }) }}
       onIncludeDateTimeChange={(includeDateTime) => { setWidget((prev) => ({ ...prev, includeDateTime })); persistSettings({ includeDateTime }) }}
       onIncludeStampChange={(includeStamp) => { setWidget((prev) => ({ ...prev, includeStamp })); persistSettings({ includeStamp }) }}
+      onDefaultDestinationModeChange={(defaultDestinationMode) => { setWidget((prev) => ({ ...prev, defaultDestinationMode })); persistSettings({ defaultDestinationMode }) }}
       defaultDestination={widget.defaultDestination}
     />
   )

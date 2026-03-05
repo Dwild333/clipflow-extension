@@ -20,6 +20,11 @@ export interface ClipFlowStorage {
     includeSourceUrl: boolean
     includeDateTime: boolean
     includeStamp: boolean
+    defaultDestinationMode: 'fixed' | 'last-saved'
+    lastSavedDestinationId: string | null
+    lastSavedDestinationEmoji: string
+    lastSavedDestinationName: string
+    lastSavedDestinationIconUrl: string | null
     newPageParentId: string | null
     newPageParentEmoji: string
     newPageParentName: string
@@ -66,6 +71,11 @@ export const DEFAULT_SETTINGS: ClipFlowStorage['settings'] = {
   includeSourceUrl: false,
   includeDateTime: false,
   includeStamp: false,
+  defaultDestinationMode: 'fixed',
+  lastSavedDestinationId: null,
+  lastSavedDestinationEmoji: '📝',
+  lastSavedDestinationName: 'Last saved page',
+  lastSavedDestinationIconUrl: null,
   newPageParentId: null,
   newPageParentEmoji: '📄',
   newPageParentName: 'Choose a parent page',
