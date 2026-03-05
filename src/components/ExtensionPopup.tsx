@@ -372,7 +372,7 @@ export function ExtensionPopup({
           <div className={`mt-4 px-4 py-2.5 flex items-center justify-between border-t ${isDark ? 'border-white/5' : 'border-black/5'}`}>
             <span className="text-[10px] text-gray-600">v1.0.0</span>
             <a
-              href="https://clipflow.tools/support"
+              href="https://notionflow.io/clipper/support"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-400 transition-colors"
