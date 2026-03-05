@@ -49,8 +49,8 @@
     ],
     "host_permissions": [
       "https://api.notion.com/*",
-      "https://*/*",
-      "http://*/*"
+      "https://www.notionflow.io/*",
+      "https://notionflow.io/*"
     ],
     "commands": {
       "_execute_action": {

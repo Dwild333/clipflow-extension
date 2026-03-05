@@ -6,7 +6,7 @@ import { verifyLicense, saveLicenseToStorage, getLicenseFromStorage } from "../l
 import type { ExtensionMessage, ShowWidgetMessage, SaveResultMessage } from "../lib/messages"
 
 // Open uninstall feedback survey when the extension is removed
-chrome.runtime.setUninstallURL("https://clipflow.tools/uninstall")
+chrome.runtime.setUninstallURL("https://notionflow.io/clipper/uninstall")
 
 // ─── Background License Verification ────────────────────────────────────────
 

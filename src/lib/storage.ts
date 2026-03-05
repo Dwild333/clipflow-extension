@@ -98,5 +98,6 @@ export async function setStorage<K extends keyof ClipFlowStorage>(
 
 export async function getSettings(): Promise<ClipFlowStorage['settings']> {
   const settings = await getStorage('settings')
-  return settings ?? DEFAULT_SETTINGS
+  if (!settings) return DEFAULT_SETTINGS
+  return { ...settings, dismissTimer: Math.min(settings.dismissTimer ?? 5, 10) }
 }

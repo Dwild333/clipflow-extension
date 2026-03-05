@@ -10,7 +10,7 @@ export async function canSave(): Promise<SaveCheckResult> {
   const storage = await chrome.storage.local.get(['license', 'usage'])
   const license = storage.license as { is_pro: boolean; expires_at: number } | undefined
 
-  if (license?.is_pro && license.expires_at > Date.now()) {
+  if (license?.is_pro && (license.expires_at === 0 || license.expires_at > Date.now())) {
     return { allowed: true }
   }
 
@@ -43,7 +43,7 @@ export async function incrementSaveCount() {
 export async function getUsageStats() {
   const storage = await chrome.storage.local.get(['license', 'usage'])
   const license = storage.license as { is_pro: boolean; expires_at: number } | undefined
-  const isPro = !!(license?.is_pro && license.expires_at > Date.now())
+  const isPro = !!(license?.is_pro && (license.expires_at === 0 || license.expires_at > Date.now()))
 
   const currentMonth = new Date().toISOString().slice(0, 7)
   const usage = storage.usage as { saves_this_month: number; month: string } | undefined
