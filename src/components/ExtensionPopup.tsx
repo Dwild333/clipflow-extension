@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun, Crown, CreditCard, Trash2 } from 'lucide-react'
+import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun, Crown, CreditCard, Trash2, Search, ChevronDown, Check } from 'lucide-react'
 import { ClipFlowLogo } from './ClipFlowLogo'
 import { PageIcon } from './PageIcon'
 
@@ -17,12 +17,24 @@ interface ExtensionPopupProps {
   includeSourceUrl?: boolean
   includeDateTime?: boolean
   includeStamp?: boolean
+  defaultDestinationMode?: 'fixed' | 'last-saved'
+  defaultDestinationId?: string | null
+  defaultDestinationName?: string
+  defaultDestinationEmoji?: string
+  defaultDestinationIconUrl?: string | null
+  newPageParentId?: string | null
+  newPageParentName?: string
+  newPageParentEmoji?: string
+  newPageParentIconUrl?: string | null
   onToggleWidget?: (enabled: boolean) => void
   onOpenSettings?: () => void
   onCloseSettings?: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
   onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp', value: boolean) => void
   onDismissTimerChange?: (value: number) => void
+  onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
+  onDefaultDestinationChange?: (page: { id: string; emoji: string; iconUrl?: string; name: string }) => void
+  onNewPageParentChange?: (page: { id: string; emoji: string; iconUrl?: string; name: string }) => void
   onDisconnect?: () => void
   onReconnect?: () => void
   onActivateLicense?: () => void
@@ -63,12 +75,24 @@ export function ExtensionPopup({
   includeSourceUrl = false,
   includeDateTime = false,
   includeStamp = false,
+  defaultDestinationMode = 'fixed',
+  defaultDestinationId = null,
+  defaultDestinationName = 'Choose a page',
+  defaultDestinationEmoji = '📝',
+  defaultDestinationIconUrl = null,
+  newPageParentId = null,
+  newPageParentName = 'Choose a parent page',
+  newPageParentEmoji = '📄',
+  newPageParentIconUrl = null,
   onToggleWidget,
   onOpenSettings,
   onCloseSettings,
   onThemeChange,
   onSettingToggle,
   onDismissTimerChange,
+  onDefaultDestinationModeChange,
+  onDefaultDestinationChange,
+  onNewPageParentChange,
   onDisconnect,
   onReconnect,
   onActivateLicense,
@@ -127,10 +151,22 @@ export function ExtensionPopup({
           includeSourceUrl={includeSourceUrl}
           includeDateTime={includeDateTime}
           includeStamp={includeStamp}
+          defaultDestinationMode={defaultDestinationMode}
+          defaultDestinationId={defaultDestinationId}
+          defaultDestinationName={defaultDestinationName}
+          defaultDestinationEmoji={defaultDestinationEmoji}
+          defaultDestinationIconUrl={defaultDestinationIconUrl}
+          newPageParentId={newPageParentId}
+          newPageParentName={newPageParentName}
+          newPageParentEmoji={newPageParentEmoji}
+          newPageParentIconUrl={newPageParentIconUrl}
           onBack={onCloseSettings!}
           onThemeChange={onThemeChange}
           onSettingToggle={onSettingToggle}
           onDismissTimerChange={onDismissTimerChange}
+          onDefaultDestinationModeChange={onDefaultDestinationModeChange}
+          onDefaultDestinationChange={onDefaultDestinationChange}
+          onNewPageParentChange={onNewPageParentChange}
           onDisconnect={onDisconnect}
           onActivateLicense={onActivateLicense}
         />
@@ -353,6 +389,8 @@ export function ExtensionPopup({
 
 // ─── Inline Settings View ─────────────────────────────────────────────────────
 
+interface NotionPageLite { id: string; emoji: string; iconUrl?: string; name: string }
+
 interface SettingsViewProps {
   theme?: 'dark' | 'light'
   isPro?: boolean
@@ -362,10 +400,22 @@ interface SettingsViewProps {
   includeSourceUrl?: boolean
   includeDateTime?: boolean
   includeStamp?: boolean
+  defaultDestinationMode?: 'fixed' | 'last-saved'
+  defaultDestinationId?: string | null
+  defaultDestinationName?: string
+  defaultDestinationEmoji?: string
+  defaultDestinationIconUrl?: string | null
+  newPageParentId?: string | null
+  newPageParentName?: string
+  newPageParentEmoji?: string
+  newPageParentIconUrl?: string | null
   onBack: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
   onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp', value: boolean) => void
   onDismissTimerChange?: (value: number) => void
+  onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
+  onDefaultDestinationChange?: (page: NotionPageLite) => void
+  onNewPageParentChange?: (page: NotionPageLite) => void
   onDisconnect?: () => void
   onActivateLicense?: () => void
 }
@@ -402,10 +452,22 @@ function SettingsView({
   includeSourceUrl = false,
   includeDateTime = false,
   includeStamp = false,
+  defaultDestinationMode = 'fixed',
+  defaultDestinationId = null,
+  defaultDestinationName = 'Choose a page',
+  defaultDestinationEmoji = '📝',
+  defaultDestinationIconUrl = null,
+  newPageParentId = null,
+  newPageParentName = 'Not set',
+  newPageParentEmoji = '📄',
+  newPageParentIconUrl = null,
   onBack,
   onThemeChange,
   onSettingToggle,
   onDismissTimerChange,
+  onDefaultDestinationModeChange,
+  onDefaultDestinationChange,
+  onNewPageParentChange,
   onDisconnect,
   onActivateLicense,
 }: SettingsViewProps) {
@@ -414,6 +476,30 @@ function SettingsView({
   const [emailInput, setEmailInput] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [verifyError, setVerifyError] = useState<string | null>(null)
+
+  // Destination picker state
+  const [showDestPicker, setShowDestPicker] = useState(false)
+  const [destSearch, setDestSearch] = useState('')
+  const [destPages, setDestPages] = useState<NotionPageLite[]>([])
+  const [destLoading, setDestLoading] = useState(false)
+
+  // New page location picker state
+  const [showParentPicker, setShowParentPicker] = useState(false)
+  const [parentSearch, setParentSearch] = useState('')
+  const [parentPages, setParentPages] = useState<NotionPageLite[]>([])
+  const [parentLoading, setParentLoading] = useState(false)
+
+  const loadPages = async (query: string, setPages: (p: NotionPageLite[]) => void, setLoading: (v: boolean) => void) => {
+    setLoading(true)
+    try {
+      const res = await chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query }) as { success: boolean; pages?: NotionPageLite[] }
+      setPages(res?.pages ?? [])
+    } catch { setPages([]) }
+    setLoading(false)
+  }
+
+  useEffect(() => { if (showDestPicker && destPages.length === 0) loadPages('', setDestPages, setDestLoading) }, [showDestPicker])
+  useEffect(() => { if (showParentPicker && parentPages.length === 0) loadPages('', setParentPages, setParentLoading) }, [showParentPicker])
 
   const handleVerify = async () => {
     const email = emailInput.trim().toLowerCase()
@@ -535,6 +621,117 @@ function SettingsView({
                     [&::-webkit-slider-thumb]:bg-indigo-500
                     ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-200'}`}
                 />
+              </div>
+            )}
+          </section>
+
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+          {/* Default Destination */}
+          <section className="space-y-2">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">Default Destination</div>
+            <div className={`flex rounded-lg overflow-hidden border ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+              <button
+                onClick={() => onDefaultDestinationModeChange?.('fixed')}
+                className={`flex-1 h-8 text-xs font-medium transition-colors ${
+                  defaultDestinationMode === 'fixed' ? 'bg-indigo-500 text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                }`}
+              >Fixed page</button>
+              <button
+                onClick={() => onDefaultDestinationModeChange?.('last-saved')}
+                className={`flex-1 h-8 text-xs font-medium transition-colors ${
+                  defaultDestinationMode === 'last-saved' ? 'bg-indigo-500 text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                }`}
+              >Last saved</button>
+            </div>
+            {defaultDestinationMode === 'last-saved' ? (
+              <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-[#1A1A1A] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                Pre-fills with the last page you saved to.
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => setShowDestPicker(v => !v)}
+                  className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <PageIcon emoji={defaultDestinationEmoji} iconUrl={defaultDestinationIconUrl ?? undefined} size={16} />
+                    <span className={`text-sm truncate ${defaultDestinationId ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>{defaultDestinationName}</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDark ? 'text-gray-400' : 'text-gray-600'} ${showDestPicker ? 'rotate-180' : ''}`} />
+                </button>
+                {showDestPicker && (
+                  <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-[#0D0D0D] border-white/10' : 'bg-white border-black/10'}`}>
+                    <div className={`px-2 py-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+                      <div className="relative">
+                        <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                        <input type="text" value={destSearch} onChange={e => setDestSearch(e.target.value)} placeholder="Search pages..."
+                          className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-[#1A1A1A] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-[160px] overflow-y-auto">
+                      {destLoading ? (
+                        <div className="flex justify-center py-4"><div className={`w-4 h-4 border-2 rounded-full animate-spin ${isDark ? 'border-gray-600 border-t-white' : 'border-gray-300 border-t-black'}`} /></div>
+                      ) : (destSearch ? destPages.filter(p => p.name.toLowerCase().includes(destSearch.toLowerCase())) : destPages).map(page => (
+                        <button key={page.id} onClick={() => { onDefaultDestinationChange?.(page); setShowDestPicker(false); setDestSearch('') }}
+                          className={`w-full h-9 px-3 flex items-center gap-2 transition-colors ${
+                            defaultDestinationId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
+                          }`}
+                        >
+                          <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} />
+                          <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
+                          {defaultDestinationId === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+          {/* New Page Location */}
+          <section className="space-y-2">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">New Page Location</div>
+            <div className="text-xs text-gray-500">Where new pages are created by default</div>
+            <button
+              onClick={() => setShowParentPicker(v => !v)}
+              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+            >
+              <div className="flex items-center gap-2">
+                <PageIcon emoji={newPageParentEmoji} iconUrl={newPageParentIconUrl ?? undefined} size={16} />
+                <span className={`text-sm truncate ${newPageParentId ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>{newPageParentId ? newPageParentName : 'Not set — tap to choose'}</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDark ? 'text-gray-400' : 'text-gray-600'} ${showParentPicker ? 'rotate-180' : ''}`} />
+            </button>
+            {showParentPicker && (
+              <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-[#0D0D0D] border-white/10' : 'bg-white border-black/10'}`}>
+                <div className={`px-2 py-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+                  <div className="relative">
+                    <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <input type="text" value={parentSearch} onChange={e => setParentSearch(e.target.value)} placeholder="Search pages..."
+                      className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-[#1A1A1A] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
+                    />
+                  </div>
+                </div>
+                <div className="max-h-[160px] overflow-y-auto">
+                  {parentLoading ? (
+                    <div className="flex justify-center py-4"><div className={`w-4 h-4 border-2 rounded-full animate-spin ${isDark ? 'border-gray-600 border-t-white' : 'border-gray-300 border-t-black'}`} /></div>
+                  ) : (parentSearch ? parentPages.filter(p => p.name.toLowerCase().includes(parentSearch.toLowerCase())) : parentPages).map(page => (
+                    <button key={page.id} onClick={() => { onNewPageParentChange?.(page); setShowParentPicker(false); setParentSearch('') }}
+                      className={`w-full h-9 px-3 flex items-center gap-2 transition-colors ${
+                        newPageParentId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} />
+                      <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
+                      {newPageParentId === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </section>

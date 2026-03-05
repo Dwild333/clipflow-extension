@@ -15,6 +15,15 @@ function IndexPopup() {
   const [includeSourceUrl, setIncludeSourceUrl] = useState(false)
   const [includeDateTime, setIncludeDateTime] = useState(false)
   const [includeStamp, setIncludeStamp] = useState(false)
+  const [defaultDestinationMode, setDefaultDestinationMode] = useState<'fixed' | 'last-saved'>('fixed')
+  const [defaultDestinationId, setDefaultDestinationId] = useState<string | null>(null)
+  const [defaultDestinationName, setDefaultDestinationName] = useState('Choose a page')
+  const [defaultDestinationEmoji, setDefaultDestinationEmoji] = useState('📝')
+  const [defaultDestinationIconUrl, setDefaultDestinationIconUrl] = useState<string | null>(null)
+  const [newPageParentId, setNewPageParentId] = useState<string | null>(null)
+  const [newPageParentName, setNewPageParentName] = useState('Choose a parent page')
+  const [newPageParentEmoji, setNewPageParentEmoji] = useState('📄')
+  const [newPageParentIconUrl, setNewPageParentIconUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [workspaceName, setWorkspaceName] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -39,6 +48,15 @@ function IndexPopup() {
     setIncludeSourceUrl(settings.includeSourceUrl ?? false)
     setIncludeDateTime(settings.includeDateTime ?? false)
     setIncludeStamp(settings.includeStamp ?? false)
+    setDefaultDestinationMode(settings.defaultDestinationMode ?? 'fixed')
+    setDefaultDestinationId(settings.defaultDestinationId ?? null)
+    setDefaultDestinationName(settings.defaultDestinationName ?? 'Choose a page')
+    setDefaultDestinationEmoji(settings.defaultDestinationEmoji ?? '📝')
+    setDefaultDestinationIconUrl(settings.defaultDestinationIconUrl ?? null)
+    setNewPageParentId(settings.newPageParentId ?? null)
+    setNewPageParentName(settings.newPageParentName ?? 'Choose a parent page')
+    setNewPageParentEmoji(settings.newPageParentEmoji ?? '📄')
+    setNewPageParentIconUrl(settings.newPageParentIconUrl ?? null)
 
     const currentMonth = new Date().toISOString().slice(0, 7)
     setSavesThisMonth(usage?.month === currentMonth ? usage.saves_this_month : 0)
@@ -81,6 +99,42 @@ function IndexPopup() {
     setTheme(newTheme)
     const settings = await getSettings()
     await setStorage("settings", { ...settings, theme: newTheme })
+  }
+
+  const handleDefaultDestinationModeChange = async (mode: 'fixed' | 'last-saved') => {
+    setDefaultDestinationMode(mode)
+    const settings = await getSettings()
+    await setStorage('settings', { ...settings, defaultDestinationMode: mode })
+  }
+
+  const handleDefaultDestinationChange = async (page: { id: string; emoji: string; iconUrl?: string; name: string }) => {
+    setDefaultDestinationId(page.id)
+    setDefaultDestinationName(page.name)
+    setDefaultDestinationEmoji(page.emoji)
+    setDefaultDestinationIconUrl(page.iconUrl ?? null)
+    const settings = await getSettings()
+    await setStorage('settings', {
+      ...settings,
+      defaultDestinationId: page.id,
+      defaultDestinationName: page.name,
+      defaultDestinationEmoji: page.emoji,
+      defaultDestinationIconUrl: page.iconUrl ?? null,
+    })
+  }
+
+  const handleNewPageParentChange = async (page: { id: string; emoji: string; iconUrl?: string; name: string }) => {
+    setNewPageParentId(page.id)
+    setNewPageParentName(page.name)
+    setNewPageParentEmoji(page.emoji)
+    setNewPageParentIconUrl(page.iconUrl ?? null)
+    const settings = await getSettings()
+    await setStorage('settings', {
+      ...settings,
+      newPageParentId: page.id,
+      newPageParentName: page.name,
+      newPageParentEmoji: page.emoji,
+      newPageParentIconUrl: page.iconUrl ?? null,
+    })
   }
 
   const handleSettingToggle = async (key: "autoDismiss" | "includeSourceUrl" | "includeDateTime" | "includeStamp", value: boolean) => {
@@ -137,12 +191,24 @@ function IndexPopup() {
       includeSourceUrl={includeSourceUrl}
       includeDateTime={includeDateTime}
       includeStamp={includeStamp}
+      defaultDestinationMode={defaultDestinationMode}
+      defaultDestinationId={defaultDestinationId}
+      defaultDestinationName={defaultDestinationName}
+      defaultDestinationEmoji={defaultDestinationEmoji}
+      defaultDestinationIconUrl={defaultDestinationIconUrl}
+      newPageParentId={newPageParentId}
+      newPageParentName={newPageParentName}
+      newPageParentEmoji={newPageParentEmoji}
+      newPageParentIconUrl={newPageParentIconUrl}
       onToggleWidget={handleToggleWidget}
       onReconnect={handleReconnect}
       onDisconnect={handleDisconnect}
       onThemeChange={handleThemeChange}
       onSettingToggle={handleSettingToggle}
       onDismissTimerChange={handleDismissTimerChange}
+      onDefaultDestinationModeChange={handleDefaultDestinationModeChange}
+      onDefaultDestinationChange={handleDefaultDestinationChange}
+      onNewPageParentChange={handleNewPageParentChange}
       onOpenSettings={handleOpenSettings}
       onCloseSettings={() => setShowSettings(false)}
     />
