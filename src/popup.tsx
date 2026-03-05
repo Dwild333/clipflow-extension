@@ -209,6 +209,7 @@ function IndexPopup() {
       onDefaultDestinationModeChange={handleDefaultDestinationModeChange}
       onDefaultDestinationChange={handleDefaultDestinationChange}
       onNewPageParentChange={handleNewPageParentChange}
+      onActivateLicense={loadState}
       onOpenSettings={handleOpenSettings}
       onCloseSettings={() => setShowSettings(false)}
     />

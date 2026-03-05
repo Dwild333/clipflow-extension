@@ -476,6 +476,7 @@ function SettingsView({
   const [emailInput, setEmailInput] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [verifyError, setVerifyError] = useState<string | null>(null)
+  const [verifySuccess, setVerifySuccess] = useState(false)
 
   // Destination picker state
   const [showDestPicker, setShowDestPicker] = useState(false)
@@ -527,6 +528,7 @@ function SettingsView({
           },
         })
         setEmailInput('')
+        setVerifySuccess(true)
         onActivateLicense?.()
       }
     } catch (err) {
@@ -802,6 +804,12 @@ function SettingsView({
                       </button>
                     </div>
                     {verifyError && <div className="mt-2 text-[11px] text-red-400">{verifyError}</div>}
+                    {verifySuccess && (
+                      <div className={`mt-2 px-3 py-2.5 rounded-lg ${isDark ? 'bg-green-500/10 border border-green-500/20' : 'bg-green-50 border border-green-200'}`}>
+                        <div className="text-[11px] text-green-400 font-medium mb-1">✓ Pro activated!</div>
+                        <div className={`text-[11px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Close and reopen the extension to see your Pro status.</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
