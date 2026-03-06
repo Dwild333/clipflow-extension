@@ -49,7 +49,7 @@ function Toggle({ on, onToggle, isDark }: { on: boolean; onToggle: () => void; i
   return (
     <button
       onClick={onToggle}
-      className={`relative w-11 h-6 rounded-full transition-colors ${on ? 'bg-indigo-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}
+      className={`relative w-11 h-6 rounded-full transition-all ${on ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}
     >
       <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${on ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
     </button>
@@ -168,7 +168,7 @@ export function SettingsPanel({
             isDark ? 'Dark mode' : 'Light mode',
             <button
               onClick={() => onThemeChange?.(theme === 'dark' ? 'light' : 'dark')}
-              className={`relative w-11 h-6 rounded-full transition-colors ${isDark ? 'bg-indigo-500' : 'bg-gray-300'}`}
+              className={`relative w-11 h-6 rounded-full transition-all ${isDark ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]' : 'bg-gray-300'}`}
             >
               <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform flex items-center justify-center ${isDark ? 'translate-x-[22px]' : 'translate-x-0.5'}`}>
                 {isDark ? <Moon className="w-3 h-3 text-indigo-500" /> : <Sun className="w-3 h-3 text-gray-500" />}
@@ -218,7 +218,7 @@ export function SettingsPanel({
                 className={`w-full h-2 rounded-lg appearance-none cursor-pointer
                   [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4
                   [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full
-                  [&::-webkit-slider-thumb]:bg-indigo-500
+                  [&::-webkit-slider-thumb]:bg-gradient-to-b [&::-webkit-slider-thumb]:from-violet-500 [&::-webkit-slider-thumb]:to-indigo-600
                   ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-200'}`}
               />
             </div>
@@ -236,7 +236,7 @@ export function SettingsPanel({
               onClick={() => onDefaultDestinationModeChange?.('fixed')}
               className={`flex-1 h-8 text-xs font-medium transition-colors ${
                 defaultDestinationMode === 'fixed'
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white'
                   : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
               }`}
             >Fixed page</button>
@@ -244,7 +244,7 @@ export function SettingsPanel({
               onClick={() => onDefaultDestinationModeChange?.('last-saved')}
               className={`flex-1 h-8 text-xs font-medium transition-colors ${
                 defaultDestinationMode === 'last-saved'
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white'
                   : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
               }`}
             >Last saved</button>

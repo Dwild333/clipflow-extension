@@ -172,7 +172,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
         <button
           onClick={handleCreate}
           disabled={!title.trim() || !selectedParent || creating}
-          className="flex-1 h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 text-white font-semibold rounded-lg transition-all flex items-center justify-center"
+          className="flex-1 h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white font-semibold rounded-lg transition-all flex items-center justify-center"
         >
           {creating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Create & Save'}
         </button>

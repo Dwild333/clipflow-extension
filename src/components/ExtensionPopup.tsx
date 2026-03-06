@@ -212,7 +212,7 @@ export function ExtensionPopup({
           <p className="text-xs text-gray-500 mb-4">Connect your workspace to start saving</p>
           <button
             onClick={onReconnect}
-            className="w-full h-9 bg-indigo-500 hover:brightness-110 text-white text-sm rounded-lg transition-all"
+            className="w-full h-9 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white text-sm rounded-lg transition-all"
           >
             Connect to Notion
           </button>
@@ -232,7 +232,7 @@ export function ExtensionPopup({
             </div>
             <button
               onClick={handleToggle}
-              className={`relative w-11 h-6 rounded-full transition-colors ${enabled ? 'bg-indigo-500' : isDark ? 'bg-gray-700' : 'bg-gray-300'}`}
+              className={`relative w-11 h-6 rounded-full transition-all ${enabled ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]' : isDark ? 'bg-gray-700' : 'bg-gray-300'}`}
             >
               <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-sm ${enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
             </button>
@@ -424,7 +424,7 @@ function Toggle({ on, onToggle, isDark }: { on: boolean; onToggle: () => void; i
   return (
     <button
       onClick={onToggle}
-      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${on ? 'bg-indigo-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}
+      className={`relative w-11 h-6 rounded-full transition-all shrink-0 ${on ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}
     >
       <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${on ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
     </button>
@@ -576,7 +576,7 @@ function SettingsView({
             <SettingsRow label="Theme" desc={isDark ? 'Dark mode' : 'Light mode'} isDark={isDark}>
               <button
                 onClick={() => onThemeChange?.(theme === 'dark' ? 'light' : 'dark')}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isDark ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                className={`relative w-11 h-6 rounded-full transition-all shrink-0 ${isDark ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]' : 'bg-gray-300'}`}
               >
                 <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform flex items-center justify-center ${isDark ? 'translate-x-[22px]' : 'translate-x-0.5'}`}>
                   {isDark
@@ -620,7 +620,7 @@ function SettingsView({
                   className={`w-full h-2 rounded-lg appearance-none cursor-pointer
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4
                     [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:bg-indigo-500
+                    [&::-webkit-slider-thumb]:bg-gradient-to-b [&::-webkit-slider-thumb]:from-violet-500 [&::-webkit-slider-thumb]:to-indigo-600
                     ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-200'}`}
                 />
               </div>
@@ -636,13 +636,13 @@ function SettingsView({
               <button
                 onClick={() => onDefaultDestinationModeChange?.('fixed')}
                 className={`flex-1 h-8 text-xs font-medium transition-colors ${
-                  defaultDestinationMode === 'fixed' ? 'bg-indigo-500 text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                  defaultDestinationMode === 'fixed' ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
                 }`}
               >Fixed page</button>
               <button
                 onClick={() => onDefaultDestinationModeChange?.('last-saved')}
                 className={`flex-1 h-8 text-xs font-medium transition-colors ${
-                  defaultDestinationMode === 'last-saved' ? 'bg-indigo-500 text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                  defaultDestinationMode === 'last-saved' ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
                 }`}
               >Last saved</button>
             </div>

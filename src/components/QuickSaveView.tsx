@@ -278,7 +278,7 @@ export function QuickSaveView({
                         href="https://clipflow.tools/upgrade"
                         target="_blank"
                         rel="noreferrer"
-                        className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                        className="w-full h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
                       >
                         <Zap className="w-4 h-4" />
                         Upgrade for unlimited saves
@@ -292,7 +292,7 @@ export function QuickSaveView({
                       </div>
                       <button
                         onClick={() => { handleInteraction(); handleSave() }}
-                        className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] text-white font-semibold rounded-lg transition-all"
+                        className="w-full h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white font-semibold rounded-lg transition-all"
                       >
                         Retry
                       </button>
@@ -304,7 +304,7 @@ export function QuickSaveView({
                   key="save"
                   onClick={() => { handleInteraction(); handleSave() }}
                   disabled={saveState === 'loading'}
-                  className="w-full h-10 bg-indigo-500 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 text-white font-semibold rounded-lg transition-all flex items-center justify-center"
+                  className="w-full h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white font-semibold rounded-lg transition-all flex items-center justify-center"
                   whileTap={{ scale: 0.97 }}
                 >
                   {saveState === 'loading' ? (

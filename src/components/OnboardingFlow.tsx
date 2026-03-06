@@ -160,7 +160,7 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
         )}
         <button
           onClick={isPagePickerStep ? handleComplete : () => setStep(s => s + 1)}
-          className="flex-1 h-9 bg-indigo-500 hover:brightness-110 active:scale-[0.98] text-white text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5"
+          className="flex-1 h-9 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5"
         >
           {isPagePickerStep ? (
             <><Check className="w-4 h-4" /><span>Get started</span></>
