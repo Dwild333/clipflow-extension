@@ -332,7 +332,7 @@ export function SettingsPanel({
           {history.length === 0 ? (
             <div className="text-xs text-gray-500 py-2">No saves yet</div>
           ) : (
-            <div className={`rounded-lg overflow-hidden border ${isDark ? 'bg-black/[0.3] border-white/[0.08]' : 'border-black/10'}`}>
+            <div className={`rounded-lg overflow-hidden border ${isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'border-black/10'}`}>
               {(showAllHistory ? history : history.slice(0, HISTORY_PREVIEW)).map((item, i) => (
                 <div key={item.id} className={i > 0 ? isDark ? 'border-t border-white/5' : 'border-t border-black/5' : ''}>
                   <button

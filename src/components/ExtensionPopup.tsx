@@ -263,16 +263,16 @@ export function ExtensionPopup({
             </div>
           )}
 
-          {/* Recent Saves */}
+          {/* Save History */}
           <div className="mt-4">
             <div className="flex items-center justify-between px-4 mb-2">
-              <span className="text-[10px] uppercase tracking-wider text-gray-500">Recent Saves</span>
+              <span className="text-[10px] uppercase tracking-wider text-gray-500">Save History ({recentSaves.length})</span>
               <Clock className="w-3 h-3 text-gray-600" />
             </div>
             {recentSaves.length === 0 ? (
               <div className="mx-4 py-4 text-center text-xs text-gray-600">No saves yet — copy some text to get started</div>
             ) : (
-            <div className={`mx-2 rounded-xl overflow-hidden ${isDark ? 'bg-white/[0.04]' : 'bg-gray-50'}`}>
+            <div className={`mx-2 rounded-xl overflow-hidden border ${isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-gray-50 border-black/[0.06]'}`}>
               {recentSaves.map((save, index) => (
                 <div key={save.id} className={index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}>
                   <button
