@@ -226,7 +226,9 @@ export function QuickSaveView({
         <>
           {/* Clipboard Preview */}
           <div className="p-4">
-            <div className={`rounded-lg p-3 max-h-[120px] overflow-y-auto ${isDark ? 'bg-[#1A1A1A]' : 'bg-gray-100'}`}>
+            <div className={`rounded-lg p-3 max-h-[120px] overflow-y-auto ${
+              isDark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-black/[0.04] border border-black/[0.06]'
+            }`}>
               <pre className={`font-mono text-xs whitespace-pre-wrap ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
                 {clipboardContent || 'No content'}
               </pre>
@@ -237,7 +239,11 @@ export function QuickSaveView({
           <div className="px-4 pb-4">
             <button
               onClick={() => { handleInteraction(); navigateTo('destination-picker') }}
-              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors border ${
+                isDark
+                  ? 'bg-white/[0.04] hover:bg-white/[0.07] border-white/[0.07]'
+                  : 'bg-black/[0.03] hover:bg-black/[0.06] border-black/[0.06]'
+              }`}
             >
               <div className="flex items-center gap-2">
                 <PageIcon emoji={selectedDestination.emoji} iconUrl={selectedDestination.iconUrl} size={20} />
@@ -247,8 +253,14 @@ export function QuickSaveView({
             </button>
           </div>
 
-          {/* Save Button */}
-          <div className="px-4 pb-4">
+          {/* Save Button — with radial brand glow behind */}
+          <div className="px-4 pb-4 relative">
+            {isDark && (
+              <div
+                className="absolute inset-0 pointer-events-none rounded-b-2xl"
+                style={{ background: 'radial-gradient(600px circle at 50% 120%, rgba(110,80,255,0.09), transparent 70%)' }}
+              />
+            )}
             <AnimatePresence mode="wait">
               {saveState === 'success' ? (
                 <motion.div
@@ -304,7 +316,8 @@ export function QuickSaveView({
                   key="save"
                   onClick={() => { handleInteraction(); handleSave() }}
                   disabled={saveState === 'loading'}
-                  className="w-full h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white font-semibold rounded-lg transition-all flex items-center justify-center"
+                  className="w-full h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 text-white font-semibold rounded-lg transition-all flex items-center justify-center relative overflow-hidden"
+                  style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 2px 12px rgba(110,80,255,0.35)' }}
                   whileTap={{ scale: 0.97 }}
                 >
                   {saveState === 'loading' ? (
@@ -341,21 +354,34 @@ export function QuickSaveView({
       style={preview ? undefined : { left: `${position.x}px`, top: `${position.y}px` }}
     >
       <div
-        className={`w-[360px] backdrop-blur-[20px] border rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden ${
-          isDark ? 'bg-[#0D0D0D]/95 border-white/10' : 'bg-white/90 border-black/10'
+        className={`w-[360px] backdrop-blur-[20px] border rounded-2xl overflow-hidden ${
+          isDark
+            ? 'border-white/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.6),0_12px_40px_rgba(0,0,0,0.6),0_40px_80px_rgba(0,0,0,0.4)]'
+            : 'border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.15),0_12px_40px_rgba(0,0,0,0.15),0_40px_80px_rgba(0,0,0,0.1)]'
         }`}
+        style={isDark ? {
+          background: 'linear-gradient(180deg, rgba(28,28,32,0.97) 0%, rgba(14,14,18,0.97) 100%)',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.6), 0 12px 40px rgba(0,0,0,0.6), 0 40px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
+        } : {
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,245,250,0.98) 100%)',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.12), 0 12px 40px rgba(0,0,0,0.12), 0 40px 80px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Persistent drag handle — always visible across all views */}
         {!preview && (
           <div
-            className={`flex items-center justify-between h-11 px-4 border-b cursor-move select-none ${
-              isDark ? 'border-white/10' : 'border-black/10'
+            className={`flex items-center justify-between h-11 px-4 cursor-move select-none ${
+              isDark
+                ? 'border-b border-b-white/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.4)]'
+                : 'border-b border-b-black/[0.06] shadow-[0_1px_0_rgba(0,0,0,0.04)]'
             }`}
             onMouseDown={handleMouseDown}
           >
             <div className="flex items-center gap-2">
-              <ClipFlowLogo size={16} />
+              <div className={`rounded-lg p-0.5 ${isDark ? 'shadow-[0_0_12px_rgba(124,92,252,0.25)]' : ''}`}>
+                <ClipFlowLogo size={16} />
+              </div>
               {currentView === 'quick-save' ? (
                 <div className="flex items-baseline gap-1.5">
                   <span className={`font-bold text-sm tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>
