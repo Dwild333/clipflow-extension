@@ -141,7 +141,10 @@ export function ExtensionPopup({
 
   if (showSettings) {
     return (
-      <div className={`w-[320px] rounded-2xl border overflow-hidden ${isDark ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-black/10'}`}>
+      <div
+        className={`w-[320px] rounded-2xl border overflow-hidden ${isDark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}
+        style={isDark ? { background: 'linear-gradient(180deg, rgba(28,28,32,0.99) 0%, rgba(14,14,18,0.99) 100%)' } : { background: 'linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,245,250,0.99) 100%)' }}
+      >
         <SettingsView
           theme={theme}
           isPro={isPro}
@@ -175,7 +178,10 @@ export function ExtensionPopup({
   }
 
   return (
-    <div className={`w-[320px] rounded-2xl border overflow-hidden ${isDark ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-black/10'}`}>
+    <div
+      className={`w-[320px] rounded-2xl border overflow-hidden ${isDark ? 'border-white/[0.08]' : 'border-black/[0.08]'}`}
+      style={isDark ? { background: 'linear-gradient(180deg, rgba(28,28,32,0.99) 0%, rgba(14,14,18,0.99) 100%)' } : { background: 'linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,245,250,0.99) 100%)' }}
+    >
       {/* Header */}
       <div className={`px-4 py-3 flex items-center justify-between border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
         <div className="flex items-center gap-2.5">
@@ -220,7 +226,7 @@ export function ExtensionPopup({
       ) : (
         <>
           {/* Widget Toggle */}
-          <div className={`mx-4 mt-4 p-3 rounded-xl flex items-center justify-between ${isDark ? 'bg-[#2A2A2A]/80' : 'bg-gray-50'}`}>
+          <div className={`mx-4 mt-4 p-3 rounded-xl flex items-center justify-between ${isDark ? 'bg-white/[0.05]' : 'bg-gray-50'}`}>
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${enabled ? 'bg-indigo-500/20 text-indigo-400' : isDark ? 'bg-white/5 text-gray-600' : 'bg-gray-200 text-gray-400'}`}>
                 <Zap className="w-4 h-4" />
@@ -240,7 +246,7 @@ export function ExtensionPopup({
 
           {/* Usage Stats (Free tier only) */}
           {!isPro && (
-            <div className={`mx-4 mt-3 rounded-xl p-3 ${isDark ? 'bg-[#2A2A2A]/80' : 'bg-gray-50'}`}>
+            <div className={`mx-4 mt-3 rounded-xl p-3 ${isDark ? 'bg-white/[0.05]' : 'bg-gray-50'}`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-baseline gap-1">
                   <span className={`text-base font-bold ${savePercentage >= 90 ? 'text-red-400' : savePercentage >= 70 ? 'text-amber-400' : isDark ? 'text-white' : 'text-black'}`}>{savesToday}</span>
@@ -248,7 +254,7 @@ export function ExtensionPopup({
                 </div>
                 <span className={`text-xs font-medium ${savesRemaining <= 5 ? 'text-amber-400' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>{savesRemaining} left</span>
               </div>
-              <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-[#1A1A1A]' : 'bg-gray-200'}`}>
+              <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`}>
                 <div
                   className={`h-full rounded-full transition-all ${savePercentage >= 90 ? 'bg-red-500' : savePercentage >= 70 ? 'bg-amber-500' : 'bg-indigo-500'}`}
                   style={{ width: `${Math.min(savePercentage, 100)}%` }}
@@ -266,7 +272,7 @@ export function ExtensionPopup({
             {recentSaves.length === 0 ? (
               <div className="mx-4 py-4 text-center text-xs text-gray-600">No saves yet — copy some text to get started</div>
             ) : (
-            <div className={`mx-2 rounded-xl overflow-hidden ${isDark ? 'bg-[#2A2A2A]/50' : 'bg-gray-50'}`}>
+            <div className={`mx-2 rounded-xl overflow-hidden ${isDark ? 'bg-white/[0.04]' : 'bg-gray-50'}`}>
               {recentSaves.map((save, index) => (
                 <div key={save.id} className={index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}>
                   <button
@@ -636,25 +642,25 @@ function SettingsView({
               <button
                 onClick={() => onDefaultDestinationModeChange?.('fixed')}
                 className={`flex-1 h-8 text-xs font-medium transition-colors ${
-                  defaultDestinationMode === 'fixed' ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                  defaultDestinationMode === 'fixed' ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white' : isDark ? 'bg-white/[0.06] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
                 }`}
               >Fixed page</button>
               <button
                 onClick={() => onDefaultDestinationModeChange?.('last-saved')}
                 className={`flex-1 h-8 text-xs font-medium transition-colors ${
-                  defaultDestinationMode === 'last-saved' ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white' : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                  defaultDestinationMode === 'last-saved' ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white' : isDark ? 'bg-white/[0.06] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
                 }`}
               >Last saved</button>
             </div>
             {defaultDestinationMode === 'last-saved' ? (
-              <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-[#1A1A1A] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+              <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-white/[0.04] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
                 Pre-fills with the last page you saved to.
               </div>
             ) : (
               <div className="space-y-1.5">
                 <button
                   onClick={() => setShowDestPicker(v => !v)}
-                  className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07]' : 'bg-gray-100 hover:bg-gray-200'}`}
                 >
                   <div className="flex items-center gap-2">
                     <PageIcon emoji={defaultDestinationEmoji} iconUrl={defaultDestinationIconUrl ?? undefined} size={16} />
@@ -663,12 +669,12 @@ function SettingsView({
                   <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDark ? 'text-gray-400' : 'text-gray-600'} ${showDestPicker ? 'rotate-180' : ''}`} />
                 </button>
                 {showDestPicker && (
-                  <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-[#0D0D0D] border-white/10' : 'bg-white border-black/10'}`}>
-                    <div className={`px-2 py-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+                  <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-black/[0.3] border-white/[0.08]' : 'bg-white border-black/10'}`}>
+                    <div className={`px-2 py-2 border-b ${isDark ? 'border-white/[0.08]' : 'border-black/10'}`}>
                       <div className="relative">
                         <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
                         <input type="text" value={destSearch} onChange={e => setDestSearch(e.target.value)} placeholder="Search pages..."
-                          className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-[#1A1A1A] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
+                          className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-white/[0.06] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
                         />
                       </div>
                     </div>
@@ -678,7 +684,7 @@ function SettingsView({
                       ) : (destSearch ? destPages.filter(p => p.name.toLowerCase().includes(destSearch.toLowerCase())) : destPages).map(page => (
                         <button key={page.id} onClick={() => { onDefaultDestinationChange?.(page); setShowDestPicker(false); setDestSearch('') }}
                           className={`w-full h-9 px-3 flex items-center gap-2 transition-colors ${
-                            defaultDestinationId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
+                            defaultDestinationId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-gray-100'
                           }`}
                         >
                           <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} />
@@ -701,7 +707,7 @@ function SettingsView({
             <div className="text-xs text-gray-500">Where new pages are created by default</div>
             <button
               onClick={() => setShowParentPicker(v => !v)}
-              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07]' : 'bg-gray-100 hover:bg-gray-200'}`}
             >
               <div className="flex items-center gap-2">
                 <PageIcon emoji={newPageParentEmoji} iconUrl={newPageParentIconUrl ?? undefined} size={16} />
@@ -710,12 +716,12 @@ function SettingsView({
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDark ? 'text-gray-400' : 'text-gray-600'} ${showParentPicker ? 'rotate-180' : ''}`} />
             </button>
             {showParentPicker && (
-              <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-[#0D0D0D] border-white/10' : 'bg-white border-black/10'}`}>
-                <div className={`px-2 py-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+              <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-black/[0.3] border-white/[0.08]' : 'bg-white border-black/10'}`}>
+                <div className={`px-2 py-2 border-b ${isDark ? 'border-white/[0.08]' : 'border-black/10'}`}>
                   <div className="relative">
                     <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
                     <input type="text" value={parentSearch} onChange={e => setParentSearch(e.target.value)} placeholder="Search pages..."
-                      className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-[#1A1A1A] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
+                      className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-white/[0.06] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
                     />
                   </div>
                 </div>
@@ -725,7 +731,7 @@ function SettingsView({
                   ) : (parentSearch ? parentPages.filter(p => p.name.toLowerCase().includes(parentSearch.toLowerCase())) : parentPages).map(page => (
                     <button key={page.id} onClick={() => { onNewPageParentChange?.(page); setShowParentPicker(false); setParentSearch('') }}
                       className={`w-full h-9 px-3 flex items-center gap-2 transition-colors ${
-                        newPageParentId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
+                        newPageParentId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-gray-100'
                       }`}
                     >
                       <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} />

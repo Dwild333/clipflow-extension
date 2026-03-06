@@ -170,7 +170,7 @@ function IndexPopup() {
 
   if (loading) {
     return (
-      <div className="w-[320px] h-[200px] flex items-center justify-center bg-[#0D0D0D]">
+      <div className="w-[320px] h-[200px] flex items-center justify-center" style={{ background: 'linear-gradient(180deg, rgba(28,28,32,1) 0%, rgba(14,14,18,1) 100%)' }}>
         <div className="w-6 h-6 border-2 border-[#333] border-t-indigo-500 rounded-full animate-spin" />
       </div>
     )

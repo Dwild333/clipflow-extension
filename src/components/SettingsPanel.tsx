@@ -157,7 +157,7 @@ export function SettingsPanel({
   )
 
   return (
-    <div className={`overflow-y-auto max-h-[480px] ${isDark ? 'bg-[#0D0D0D]' : 'bg-white'}`}>
+    <div className={`overflow-y-auto max-h-[480px] ${isDark ? 'bg-transparent' : 'bg-transparent'}`}>
       <div className="p-4 space-y-5">
 
         {/* ── Appearance ── */}
@@ -237,7 +237,7 @@ export function SettingsPanel({
               className={`flex-1 h-8 text-xs font-medium transition-colors ${
                 defaultDestinationMode === 'fixed'
                   ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white'
-                  : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                  : isDark ? 'bg-white/[0.06] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
               }`}
             >Fixed page</button>
             <button
@@ -245,12 +245,12 @@ export function SettingsPanel({
               className={`flex-1 h-8 text-xs font-medium transition-colors ${
                 defaultDestinationMode === 'last-saved'
                   ? 'bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white'
-                  : isDark ? 'bg-[#1A1A1A] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
+                  : isDark ? 'bg-white/[0.06] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-black'
               }`}
             >Last saved</button>
           </div>
           {defaultDestinationMode === 'last-saved' ? (
-            <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-[#1A1A1A] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+            <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-white/[0.04] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
               Widget will pre-fill with the last page you saved to.
             </div>
           ) : (
@@ -258,7 +258,7 @@ export function SettingsPanel({
           <div className="text-xs text-gray-500">Where new pages are created by default</div>
           <button
             onClick={() => setShowParentPicker(v => !v)}
-            className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
+            className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors border ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.07] border-white/[0.07]' : 'bg-gray-100 hover:bg-gray-200 border-transparent'}`}
           >
             <div className="flex items-center gap-2">
               <PageIcon emoji={parentPage?.emoji ?? '📄'} iconUrl={parentPage?.iconUrl} size={18} />
@@ -270,7 +270,7 @@ export function SettingsPanel({
           </button>
 
           {showParentPicker && (
-            <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-[#0D0D0D] border-white/10' : 'bg-white border-black/10'}`}>
+            <div className={`border rounded-lg overflow-hidden ${isDark ? 'bg-black/[0.3] border-white/[0.08]' : 'bg-white border-black/10'}`}>
               <div className={`px-2 py-2 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
                 <div className="relative">
                   <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
@@ -279,7 +279,7 @@ export function SettingsPanel({
                     value={parentSearch}
                     onChange={e => setParentSearch(e.target.value)}
                     placeholder="Search pages..."
-                    className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-[#1A1A1A] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
+                    className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-white/[0.06] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
                   />
                 </div>
               </div>
@@ -297,7 +297,7 @@ export function SettingsPanel({
                     className={`w-full h-9 px-3 flex items-center gap-2 transition-colors ${
                       parentPage?.id === page.id
                         ? isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'
-                        : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
+                        : isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-gray-100'
                     }`}
                   >
                     <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
@@ -332,7 +332,7 @@ export function SettingsPanel({
           {history.length === 0 ? (
             <div className="text-xs text-gray-500 py-2">No saves yet</div>
           ) : (
-            <div className={`rounded-lg overflow-hidden border ${isDark ? 'bg-[#0D0D0D] border-white/10' : 'border-black/10'}`}>
+            <div className={`rounded-lg overflow-hidden border ${isDark ? 'bg-black/[0.3] border-white/[0.08]' : 'border-black/10'}`}>
               {(showAllHistory ? history : history.slice(0, HISTORY_PREVIEW)).map((item, i) => (
                 <div key={item.id} className={i > 0 ? isDark ? 'border-t border-white/5' : 'border-t border-black/5' : ''}>
                   <button
