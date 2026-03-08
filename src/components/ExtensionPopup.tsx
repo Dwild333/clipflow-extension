@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Settings, Power, ChevronRight, Clock, Zap, ExternalLink, Moon, Sun, Crown, CreditCard, Trash2, Search, ChevronDown, Check } from 'lucide-react'
-import { ClipFlowLogo } from './ClipFlowLogo'
+import { ClipperLogo } from './ClipperLogo'
 import { PageIcon } from './PageIcon'
 
 interface ExtensionPopupProps {
@@ -17,20 +17,23 @@ interface ExtensionPopupProps {
   includeSourceUrl?: boolean
   includeDateTime?: boolean
   includeStamp?: boolean
+  includeDatabases?: boolean
   defaultDestinationMode?: 'fixed' | 'last-saved'
   defaultDestinationId?: string | null
   defaultDestinationName?: string
   defaultDestinationEmoji?: string
   defaultDestinationIconUrl?: string | null
+  defaultDestinationType?: 'page' | 'database'
   newPageParentId?: string | null
   newPageParentName?: string
   newPageParentEmoji?: string
   newPageParentIconUrl?: string | null
+  newPageParentType?: 'page' | 'database'
   onToggleWidget?: (enabled: boolean) => void
   onOpenSettings?: () => void
   onCloseSettings?: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
-  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp', value: boolean) => void
+  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp' | 'includeDatabases', value: boolean) => void
   onDismissTimerChange?: (value: number) => void
   onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
   onDefaultDestinationChange?: (page: { id: string; emoji: string; iconUrl?: string; name: string }) => void
@@ -75,15 +78,18 @@ export function ExtensionPopup({
   includeSourceUrl = false,
   includeDateTime = false,
   includeStamp = false,
+  includeDatabases = false,
   defaultDestinationMode = 'fixed',
   defaultDestinationId = null,
   defaultDestinationName = 'Choose a page',
   defaultDestinationEmoji = '📝',
   defaultDestinationIconUrl = null,
+  defaultDestinationType = 'page',
   newPageParentId = null,
   newPageParentName = 'Choose a parent page',
   newPageParentEmoji = '📄',
   newPageParentIconUrl = null,
+  newPageParentType = 'page',
   onToggleWidget,
   onOpenSettings,
   onCloseSettings,
@@ -101,13 +107,14 @@ export function ExtensionPopup({
   const [recentSaves, setRecentSaves] = useState<RecentSave[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [showAllHistory, setShowAllHistory] = useState(false)
   const isDark = theme !== 'light'
 
   useEffect(() => {
     chrome.storage.local.get('recentSaves').then((result) => {
       const raw = result.recentSaves as Array<{ id: string; textPreview: string; destinationId: string; destinationName: string; destinationEmoji: string; destinationIconUrl?: string; savedAt: string; sourceUrl?: string }> | undefined
       if (!raw?.length) return
-      setRecentSaves(raw.slice(0, 5).map(s => ({
+      setRecentSaves(raw.map(s => ({
         id: s.id,
         preview: s.textPreview,
         destination: s.destinationName,
@@ -154,15 +161,18 @@ export function ExtensionPopup({
           includeSourceUrl={includeSourceUrl}
           includeDateTime={includeDateTime}
           includeStamp={includeStamp}
+          includeDatabases={includeDatabases}
           defaultDestinationMode={defaultDestinationMode}
           defaultDestinationId={defaultDestinationId}
           defaultDestinationName={defaultDestinationName}
           defaultDestinationEmoji={defaultDestinationEmoji}
           defaultDestinationIconUrl={defaultDestinationIconUrl}
+          defaultDestinationType={defaultDestinationType}
           newPageParentId={newPageParentId}
           newPageParentName={newPageParentName}
           newPageParentEmoji={newPageParentEmoji}
           newPageParentIconUrl={newPageParentIconUrl}
+          newPageParentType={newPageParentType}
           onBack={onCloseSettings!}
           onThemeChange={onThemeChange}
           onSettingToggle={onSettingToggle}
@@ -185,7 +195,7 @@ export function ExtensionPopup({
       {/* Header */}
       <div className={`px-4 py-3 flex items-center justify-between border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
         <div className="flex items-center gap-2.5">
-          <ClipFlowLogo size={28} />
+          <ClipperLogo size={28} />
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>
@@ -267,20 +277,30 @@ export function ExtensionPopup({
           <div className="mt-4">
             <div className="flex items-center justify-between px-4 mb-2">
               <span className="text-[10px] uppercase tracking-wider text-gray-500">Save History ({recentSaves.length})</span>
-              <Clock className="w-3 h-3 text-gray-600" />
+              {recentSaves.length > 5 ? (
+                <button
+                  onClick={() => setShowAllHistory(v => !v)}
+                  className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  {showAllHistory ? `Show less` : `Show all ${recentSaves.length}`}
+                </button>
+              ) : (
+                <Clock className="w-3 h-3 text-gray-600" />
+              )}
             </div>
             {recentSaves.length === 0 ? (
               <div className="mx-4 py-4 text-center text-xs text-gray-600">No saves yet — copy some text to get started</div>
             ) : (
-            <div className={`mx-2 rounded-xl overflow-hidden border ${isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-gray-50 border-black/[0.06]'}`}>
-              {recentSaves.map((save, index) => (
-                <div key={save.id} className={index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}>
+            <div className={`mx-2 mb-3 rounded-xl border overflow-hidden ${isDark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-gray-50 border-black/[0.06]'}`}>
+              <div className={showAllHistory ? 'max-h-[400px] overflow-y-auto' : ''}>
+                {(showAllHistory ? recentSaves : recentSaves.slice(0, 5)).map((save, index) => (
+                  <div key={save.id} className={index < recentSaves.length - 1 ? isDark ? 'border-b border-white/5' : 'border-b border-black/5' : ''}>
                   <button
                     onClick={() => { setExpandedId(expandedId === save.id ? null : save.id); setConfirmDeleteId(null) }}
                     className={`w-full px-3 py-2.5 flex items-start gap-2.5 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'}`}
                   >
                     <div className="mt-0.5 shrink-0">
-                      <PageIcon emoji={save.destinationEmoji} iconUrl={save.destinationIconUrl} size={16} />
+                      <PageIcon emoji={save.destinationEmoji} iconUrl={save.destinationIconUrl} size={16} type={(save as any).destinationType} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className={`text-xs ${expandedId === save.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -346,7 +366,8 @@ export function ExtensionPopup({
                     </div>
                   )}
                 </div>
-              ))}
+                ))}
+              </div>
             </div>
             )}
           </div>
@@ -395,7 +416,7 @@ export function ExtensionPopup({
 
 // ─── Inline Settings View ─────────────────────────────────────────────────────
 
-interface NotionPageLite { id: string; emoji: string; iconUrl?: string; name: string }
+interface NotionPageLite { id: string; emoji: string; iconUrl?: string; name: string; type?: 'page' | 'database' }
 
 interface SettingsViewProps {
   theme?: 'dark' | 'light'
@@ -406,18 +427,21 @@ interface SettingsViewProps {
   includeSourceUrl?: boolean
   includeDateTime?: boolean
   includeStamp?: boolean
+  includeDatabases?: boolean
   defaultDestinationMode?: 'fixed' | 'last-saved'
   defaultDestinationId?: string | null
   defaultDestinationName?: string
   defaultDestinationEmoji?: string
   defaultDestinationIconUrl?: string | null
+  defaultDestinationType?: 'page' | 'database'
   newPageParentId?: string | null
   newPageParentName?: string
   newPageParentEmoji?: string
   newPageParentIconUrl?: string | null
+  newPageParentType?: 'page' | 'database'
   onBack: () => void
   onThemeChange?: (theme: 'dark' | 'light') => void
-  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp', value: boolean) => void
+  onSettingToggle?: (key: 'autoDismiss' | 'includeSourceUrl' | 'includeDateTime' | 'includeStamp' | 'includeDatabases', value: boolean) => void
   onDismissTimerChange?: (value: number) => void
   onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
   onDefaultDestinationChange?: (page: NotionPageLite) => void
@@ -458,15 +482,18 @@ function SettingsView({
   includeSourceUrl = false,
   includeDateTime = false,
   includeStamp = false,
+  includeDatabases = false,
   defaultDestinationMode = 'fixed',
   defaultDestinationId = null,
   defaultDestinationName = 'Choose a page',
   defaultDestinationEmoji = '📝',
   defaultDestinationIconUrl = null,
+  defaultDestinationType = 'page',
   newPageParentId = null,
   newPageParentName = 'Not set',
   newPageParentEmoji = '📄',
   newPageParentIconUrl = null,
+  newPageParentType = 'page',
   onBack,
   onThemeChange,
   onSettingToggle,
@@ -663,7 +690,7 @@ function SettingsView({
                   className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07]' : 'bg-gray-100 hover:bg-gray-200'}`}
                 >
                   <div className="flex items-center gap-2">
-                    <PageIcon emoji={defaultDestinationEmoji} iconUrl={defaultDestinationIconUrl ?? undefined} size={16} />
+                    <PageIcon emoji={defaultDestinationEmoji} iconUrl={defaultDestinationIconUrl ?? undefined} size={16} type={defaultDestinationType} />
                     <span className={`text-sm truncate ${defaultDestinationId ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>{defaultDestinationName}</span>
                   </div>
                   <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDark ? 'text-gray-400' : 'text-gray-600'} ${showDestPicker ? 'rotate-180' : ''}`} />
@@ -687,7 +714,7 @@ function SettingsView({
                             defaultDestinationId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-gray-100'
                           }`}
                         >
-                          <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} />
+                          <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} type={page.type} />
                           <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
                           {defaultDestinationId === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
                         </button>
@@ -710,7 +737,7 @@ function SettingsView({
               className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07]' : 'bg-gray-100 hover:bg-gray-200'}`}
             >
               <div className="flex items-center gap-2">
-                <PageIcon emoji={newPageParentEmoji} iconUrl={newPageParentIconUrl ?? undefined} size={16} />
+                <PageIcon emoji={newPageParentEmoji} iconUrl={newPageParentIconUrl ?? undefined} size={16} type={newPageParentType} />
                 <span className={`text-sm truncate ${newPageParentId ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>{newPageParentId ? newPageParentName : 'Not set — tap to choose'}</span>
               </div>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDark ? 'text-gray-400' : 'text-gray-600'} ${showParentPicker ? 'rotate-180' : ''}`} />
@@ -734,12 +761,38 @@ function SettingsView({
                         newPageParentId === page.id ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-gray-100'
                       }`}
                     >
-                      <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} />
+                      <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={16} type={page.type} />
                       <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
                       {newPageParentId === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+          </section>
+
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+          {/* Advanced (Pro) */}
+          <section className="space-y-3">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">Advanced {!isPro && '(Pro)'}</div>
+            <SettingsRow 
+              label="Include databases" 
+              desc="Show databases alongside pages (marked with a blue dot)" 
+              isDark={isDark}
+            >
+              {isPro ? (
+                <Toggle on={includeDatabases} onToggle={() => onSettingToggle?.('includeDatabases', !includeDatabases)} isDark={isDark} />
+              ) : (
+                <div className="relative">
+                  <Toggle on={false} onToggle={() => {}} isDark={isDark} />
+                  <div className="absolute inset-0 cursor-not-allowed" onClick={() => window.open('https://www.notionflow.io/#pricing', '_blank')} />
+                </div>
+              )}
+            </SettingsRow>
+            {!isPro && (
+              <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-white/[0.04] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                Upgrade to Pro to enable database support. New pages will be created in databases with auto-generated titles.
               </div>
             )}
           </section>

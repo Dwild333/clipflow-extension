@@ -1,4 +1,5 @@
 import { getStorage, setStorage } from "./storage"
+import { getHistoryLimit } from './limits'
 
 const NOTION_VERSION = "2022-06-28"
 const NOTION_API = "https://api.notion.com/v1"
@@ -15,20 +16,36 @@ async function notionHeaders(): Promise<HeadersInit> {
 }
 
 /** Search Notion pages/databases accessible to the integration */
-export async function searchNotionPages(query: string = ""): Promise<NotionPage[]> {
+export async function searchNotionPages(query: string = "", includeDatabases: boolean = false): Promise<NotionPage[]> {
+  console.log('[Clipper] searchNotionPages called:', { query, includeDatabases })
   const headers = await notionHeaders()
+  const body: any = {
+    query,
+    sort: { direction: "descending", timestamp: "last_edited_time" },
+    page_size: 20,
+  }
+  // Only filter to pages if databases are not included
+  if (!includeDatabases) {
+    body.filter = { value: "page", property: "object" }
+  }
+  console.log('[Clipper] Search request body:', body)
   const res = await fetch(`${NOTION_API}/search`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      query,
-      filter: { value: "page", property: "object" },
-      sort: { direction: "descending", timestamp: "last_edited_time" },
-      page_size: 20,
-    }),
+    body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(`Notion search failed: ${res.status}`)
+  console.log('[Clipper] Search response:', { status: res.status, ok: res.ok })
+  if (!res.ok) {
+    const errorData = await res.json()
+    console.error('[Clipper] Search error response:', errorData)
+    throw new Error(`Notion search failed: ${res.status}`)
+  }
   const data = await res.json() as { results: NotionAPIPage[] }
+  console.log('[Clipper] Search results:', { count: data.results?.length, results: data.results })
+  if (!Array.isArray(data.results)) {
+    console.error('[Clipper] Invalid search response - results is not an array:', data)
+    return []
+  }
   return data.results.map(pageFromAPI)
 }
 
@@ -50,18 +67,39 @@ function textToBlocks(text: string): object[] {
 
 /** Send blocks in batches of 95 to stay under Notion's 100-block-per-request limit */
 async function appendBlocksBatched(pageId: string, blocks: object[], headers: HeadersInit): Promise<void> {
+  console.log('[Clipper] appendBlocksBatched called with:', { pageId, blockCount: blocks.length })
+  
   for (let i = 0; i < blocks.length; i += NOTION_BLOCK_BATCH) {
     const batch = blocks.slice(i, i + NOTION_BLOCK_BATCH)
+    console.log('[Clipper] Sending batch to Notion API:', { 
+      batchIndex: i / NOTION_BLOCK_BATCH, 
+      batchSize: batch.length,
+      url: `${NOTION_API}/blocks/${pageId}/children`
+    })
+    
     const res = await fetch(`${NOTION_API}/blocks/${pageId}/children`, {
       method: "PATCH",
       headers,
       body: JSON.stringify({ children: batch }),
     })
+    
+    console.log('[Clipper] Notion API response:', { 
+      status: res.status, 
+      ok: res.ok,
+      statusText: res.statusText 
+    })
+    
     if (!res.ok) {
       const err = await res.json() as { message?: string }
+      console.error('[Clipper] Notion API error:', err)
       throw new Error(err.message || `Append failed: ${res.status}`)
     }
+    
+    const responseData = await res.json()
+    console.log('[Clipper] Notion API success response:', responseData)
   }
+  
+  console.log('[Clipper] All batches sent successfully')
 }
 
 /** Append a text block (+ optional metadata) to a Notion page */
@@ -113,6 +151,65 @@ export async function appendTextToPage(
   await appendBlocksBatched(pageId, children, headers)
 }
 
+/** Get the title property name for a database */
+async function getDatabaseTitleProperty(databaseId: string): Promise<string> {
+  const headers = await notionHeaders()
+  const res = await fetch(`${NOTION_API}/databases/${databaseId}`, { headers })
+  if (!res.ok) return 'Name'  // fallback
+  const db = await res.json() as { properties?: Record<string, { type: string }> }
+  const titleProp = Object.entries(db.properties || {})
+    .find(([_, prop]) => prop.type === 'title')
+  return titleProp ? titleProp[0] : 'Name'
+}
+
+/** Create a new page in a database with auto-generated title */
+export async function createPageInDatabase(
+  databaseId: string,
+  text: string,
+  options?: { sourceUrl?: string; includeDateTime?: boolean; includeStamp?: boolean }
+): Promise<NotionPage> {
+  const headers = await notionHeaders()
+  
+  // Generate title from clipped text
+  const cleaned = text.trim()
+  const title = cleaned.slice(0, 60) + (cleaned.length > 60 ? '...' : '') 
+    || `Clipped ${new Date().toLocaleString()}`
+  
+  // Get the database's title property name
+  const titlePropName = await getDatabaseTitleProperty(databaseId)
+  
+  // Create page in database
+  const res = await fetch(`${NOTION_API}/pages`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      parent: { type: 'database_id', database_id: databaseId },
+      properties: {
+        [titlePropName]: {
+          title: [{ type: 'text', text: { content: title } }]
+        }
+      }
+    })
+  })
+  
+  if (!res.ok) {
+    const err = await res.json() as { message?: string; code?: string }
+    console.error('Database save failed:', { status: res.status, error: err })
+    // Provide user-friendly error message
+    if (err.code === 'validation_error' || err.message?.includes('required')) {
+      throw new Error('This database has required properties that cannot be auto-filled. Please use a simpler database or create pages manually.')
+    }
+    throw new Error(err.message || 'Failed to create page in database')
+  }
+  
+  const page = await res.json() as NotionAPIPage
+  
+  // Append content blocks to the newly created page
+  await appendTextToPage(page.id, text, options)
+  
+  return pageFromAPI(page)
+}
+
 /** Create a new Notion page under a parent page */
 export async function createNotionPage(
   parentPageId: string,
@@ -139,16 +236,23 @@ export async function createNotionPage(
   return pageFromAPI(data)
 }
 
-/** Record a save in recent saves list (max 50) */
+/** Record a save in recent saves list (10 free / 50 pro) */
 export async function recordRecentSave(params: {
   text: string
   destinationId: string
   destinationName: string
   destinationEmoji: string
   destinationIconUrl?: string
+  destinationType?: 'page' | 'database'
   sourceUrl: string
 }): Promise<void> {
-  const existing = (await getStorage("recentSaves")) ?? []
+  const storage = await chrome.storage.local.get(['license', 'recentSaves'])
+  const license = storage.license as { is_pro: boolean; expires_at: number } | undefined
+  const isPro = !!(license?.is_pro && (license.expires_at === 0 || license.expires_at > Date.now()))
+  
+  const limit = getHistoryLimit(isPro)
+  
+  const existing = (storage.recentSaves as any[]) ?? []
   const newSave = {
     id: Date.now().toString(),
     textPreview: params.text.slice(0, 300),
@@ -156,10 +260,11 @@ export async function recordRecentSave(params: {
     destinationName: params.destinationName,
     destinationEmoji: params.destinationEmoji,
     destinationIconUrl: params.destinationIconUrl,
+    destinationType: params.destinationType,
     savedAt: new Date().toISOString(),
     sourceUrl: params.sourceUrl,
   }
-  const updated = [newSave, ...existing].slice(0, 25)
+  const updated = [newSave, ...existing].slice(0, limit)
   await setStorage("recentSaves", updated)
 }
 
@@ -170,10 +275,12 @@ export interface NotionPage {
   emoji: string
   iconUrl?: string
   name: string
+  type: 'page' | 'database'
 }
 
 interface NotionAPIPage {
   id: string
+  object: 'page' | 'database'
   icon?: {
     type: string
     emoji?: string
@@ -194,11 +301,22 @@ function pageFromAPI(page: NotionAPIPage): NotionPage {
   const iconUrl =
     iconType === "external" ? page.icon?.external?.url
     : undefined
-  const titleArr =
-    page.properties?.title?.title ??
-    page.properties?.Name?.title ??
-    page.title ??
-    []
-  const name = titleArr.map((t) => t.plain_text).join("") || "Untitled"
-  return { id: page.id, emoji, iconUrl, name }
+  
+  // Get title array - databases have it directly, pages have it in properties
+  let titleArr: Array<{ plain_text: string }> = []
+  if (page.object === 'database') {
+    // Databases have title as a direct property
+    titleArr = page.title ?? []
+  } else {
+    // Pages have title nested in properties
+    titleArr = page.properties?.title?.title ?? page.properties?.Name?.title ?? []
+  }
+  
+  // Ensure titleArr is an array before mapping
+  const name = Array.isArray(titleArr) 
+    ? titleArr.map((t) => t.plain_text).join("") || "Untitled"
+    : "Untitled"
+  
+  const type = page.object === 'database' ? 'database' : 'page'
+  return { id: page.id, emoji, iconUrl, name, type }
 }

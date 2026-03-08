@@ -25,7 +25,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
   useEffect(() => {
     getSettings().then(s => {
       if (s.newPageParentId) {
-        setSelectedParent({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName })
+        setSelectedParent({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName, type: 'page' })
       }
     })
     setPagesLoading(true)
@@ -107,7 +107,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
             className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors ${isDark ? 'bg-[#1A1A1A] hover:bg-[#2A2A2A]' : 'bg-gray-100 hover:bg-gray-200'}`}
           >
             <div className="flex items-center gap-2">
-              <PageIcon emoji={selectedParent?.emoji ?? '📄'} iconUrl={selectedParent?.iconUrl} size={18} />
+              <PageIcon emoji={selectedParent?.emoji ?? '📄'} iconUrl={selectedParent?.iconUrl} size={18} type={selectedParent?.type} />
               <span className={`text-sm ${selectedParent ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>
                 {selectedParent?.name ?? 'Choose a parent page'}
               </span>
@@ -149,7 +149,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
                         : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
                     }`}
                   >
-                    <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
+                    <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} type={page.type} />
                     <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
                     {selectedParent?.id === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
                   </button>

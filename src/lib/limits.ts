@@ -1,5 +1,12 @@
 const FREE_MONTHLY_LIMIT = 75
 
+export const FREE_HISTORY_LIMIT = 10
+export const PRO_HISTORY_LIMIT = 50
+
+export function getHistoryLimit(isPro: boolean): number {
+  return isPro ? PRO_HISTORY_LIMIT : FREE_HISTORY_LIMIT
+}
+
 export interface SaveCheckResult {
   allowed: boolean
   reason?: string

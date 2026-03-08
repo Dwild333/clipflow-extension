@@ -1,5 +1,5 @@
 import { Settings, X } from 'lucide-react'
-import { ClipFlowLogo } from '../components/ClipFlowLogo'
+import { ClipperLogo } from '../components/ClipperLogo'
 import { themeColors } from './theme'
 import type { Theme } from './types'
 
@@ -15,7 +15,7 @@ interface WidgetHeaderProps {
 
 export function WidgetHeader({
   theme = 'dark',
-  title = 'ClipFlow',
+  title = 'Clipper',
   onClose,
   onSettings,
   draggable = false,
@@ -33,7 +33,7 @@ export function WidgetHeader({
     >
       {leftContent ?? (
         <div className="flex items-center gap-2">
-          <ClipFlowLogo size={16} />
+          <ClipperLogo size={16} />
           <span className={`text-sm font-semibold ${colors.textPrimary}`}>
             {title}
           </span>

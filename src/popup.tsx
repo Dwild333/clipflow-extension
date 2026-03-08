@@ -15,15 +15,18 @@ function IndexPopup() {
   const [includeSourceUrl, setIncludeSourceUrl] = useState(false)
   const [includeDateTime, setIncludeDateTime] = useState(false)
   const [includeStamp, setIncludeStamp] = useState(false)
+  const [includeDatabases, setIncludeDatabases] = useState(false)
   const [defaultDestinationMode, setDefaultDestinationMode] = useState<'fixed' | 'last-saved'>('fixed')
   const [defaultDestinationId, setDefaultDestinationId] = useState<string | null>(null)
   const [defaultDestinationName, setDefaultDestinationName] = useState('Choose a page')
   const [defaultDestinationEmoji, setDefaultDestinationEmoji] = useState('📝')
   const [defaultDestinationIconUrl, setDefaultDestinationIconUrl] = useState<string | null>(null)
+  const [defaultDestinationType, setDefaultDestinationType] = useState<'page' | 'database'>('page')
   const [newPageParentId, setNewPageParentId] = useState<string | null>(null)
   const [newPageParentName, setNewPageParentName] = useState('Choose a parent page')
   const [newPageParentEmoji, setNewPageParentEmoji] = useState('📄')
   const [newPageParentIconUrl, setNewPageParentIconUrl] = useState<string | null>(null)
+  const [newPageParentType, setNewPageParentType] = useState<'page' | 'database'>('page')
   const [loading, setLoading] = useState(true)
   const [workspaceName, setWorkspaceName] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -48,15 +51,18 @@ function IndexPopup() {
     setIncludeSourceUrl(settings.includeSourceUrl ?? false)
     setIncludeDateTime(settings.includeDateTime ?? false)
     setIncludeStamp(settings.includeStamp ?? false)
+    setIncludeDatabases(settings.includeDatabases ?? false)
     setDefaultDestinationMode(settings.defaultDestinationMode ?? 'fixed')
     setDefaultDestinationId(settings.defaultDestinationId ?? null)
     setDefaultDestinationName(settings.defaultDestinationName ?? 'Choose a page')
     setDefaultDestinationEmoji(settings.defaultDestinationEmoji ?? '📝')
     setDefaultDestinationIconUrl(settings.defaultDestinationIconUrl ?? null)
+    setDefaultDestinationType(settings.defaultDestinationType ?? 'page')
     setNewPageParentId(settings.newPageParentId ?? null)
     setNewPageParentName(settings.newPageParentName ?? 'Choose a parent page')
     setNewPageParentEmoji(settings.newPageParentEmoji ?? '📄')
     setNewPageParentIconUrl(settings.newPageParentIconUrl ?? null)
+    setNewPageParentType(settings.newPageParentType ?? 'page')
 
     const currentMonth = new Date().toISOString().slice(0, 7)
     setSavesThisMonth(usage?.month === currentMonth ? usage.saves_this_month : 0)
@@ -107,7 +113,7 @@ function IndexPopup() {
     await setStorage('settings', { ...settings, defaultDestinationMode: mode })
   }
 
-  const handleDefaultDestinationChange = async (page: { id: string; emoji: string; iconUrl?: string; name: string }) => {
+  const handleDefaultDestinationChange = async (page: { id: string; emoji: string; iconUrl?: string; name: string; type?: 'page' | 'database' }) => {
     setDefaultDestinationId(page.id)
     setDefaultDestinationName(page.name)
     setDefaultDestinationEmoji(page.emoji)
@@ -119,14 +125,16 @@ function IndexPopup() {
       defaultDestinationName: page.name,
       defaultDestinationEmoji: page.emoji,
       defaultDestinationIconUrl: page.iconUrl ?? null,
+      defaultDestinationType: page.type ?? 'page',
     })
   }
 
-  const handleNewPageParentChange = async (page: { id: string; emoji: string; iconUrl?: string; name: string }) => {
+  const handleNewPageParentChange = async (page: { id: string; emoji: string; iconUrl?: string; name: string; type?: 'page' | 'database' }) => {
     setNewPageParentId(page.id)
     setNewPageParentName(page.name)
     setNewPageParentEmoji(page.emoji)
     setNewPageParentIconUrl(page.iconUrl ?? null)
+    setNewPageParentType(page.type ?? 'page')
     const settings = await getSettings()
     await setStorage('settings', {
       ...settings,
@@ -134,14 +142,16 @@ function IndexPopup() {
       newPageParentName: page.name,
       newPageParentEmoji: page.emoji,
       newPageParentIconUrl: page.iconUrl ?? null,
+      newPageParentType: page.type ?? 'page',
     })
   }
 
-  const handleSettingToggle = async (key: "autoDismiss" | "includeSourceUrl" | "includeDateTime" | "includeStamp", value: boolean) => {
+  const handleSettingToggle = async (key: "autoDismiss" | "includeSourceUrl" | "includeDateTime" | "includeStamp" | "includeDatabases", value: boolean) => {
     if (key === "autoDismiss") setAutoDismiss(value)
     if (key === "includeSourceUrl") setIncludeSourceUrl(value)
     if (key === "includeDateTime") setIncludeDateTime(value)
     if (key === "includeStamp") setIncludeStamp(value)
+    if (key === "includeDatabases") setIncludeDatabases(value)
     const settings = await getSettings()
     await setStorage("settings", { ...settings, [key]: value })
   }
@@ -191,15 +201,18 @@ function IndexPopup() {
       includeSourceUrl={includeSourceUrl}
       includeDateTime={includeDateTime}
       includeStamp={includeStamp}
+      includeDatabases={includeDatabases}
       defaultDestinationMode={defaultDestinationMode}
       defaultDestinationId={defaultDestinationId}
       defaultDestinationName={defaultDestinationName}
       defaultDestinationEmoji={defaultDestinationEmoji}
       defaultDestinationIconUrl={defaultDestinationIconUrl}
+      defaultDestinationType={defaultDestinationType}
       newPageParentId={newPageParentId}
       newPageParentName={newPageParentName}
       newPageParentEmoji={newPageParentEmoji}
       newPageParentIconUrl={newPageParentIconUrl}
+      newPageParentType={newPageParentType}
       onToggleWidget={handleToggleWidget}
       onReconnect={handleReconnect}
       onDisconnect={handleDisconnect}

@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Settings, X, ChevronDown, Check, CircleAlert, Zap } from 'lucide-react'
 import { PageIcon } from './PageIcon'
 import { motion, AnimatePresence } from 'motion/react'
 import { DestinationPicker } from './DestinationPicker'
 import { SettingsPanel } from './SettingsPanel'
 import { CreateNewPage } from './CreateNewPage'
-import { ClipFlowLogo } from './ClipFlowLogo'
+import { ClipperLogo } from './ClipperLogo'
 
 interface QuickSaveViewProps {
   position: { x: number; y: number }
@@ -24,12 +24,15 @@ interface QuickSaveViewProps {
   includeSourceUrl?: boolean
   includeDateTime?: boolean
   includeStamp?: boolean
+  includeDatabases?: boolean
   defaultDestinationMode?: 'fixed' | 'last-saved'
   onIncludeSourceUrlChange?: (v: boolean) => void
   onIncludeDateTimeChange?: (v: boolean) => void
   onIncludeStampChange?: (v: boolean) => void
+  onIncludeDatabasesChange?: (v: boolean) => void
   onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
-  defaultDestination?: { id: string; emoji: string; iconUrl?: string; name: string } | null
+  defaultDestination?: { id: string; emoji: string; iconUrl?: string; name: string; type?: 'page' | 'database' } | null
+  isPro?: boolean
   preview?: boolean
 }
 
@@ -58,12 +61,15 @@ export function QuickSaveView({
   includeSourceUrl = false,
   includeDateTime = false,
   includeStamp = false,
+  includeDatabases = false,
   defaultDestinationMode = 'fixed',
   onIncludeSourceUrlChange,
   onIncludeDateTimeChange,
   onIncludeStampChange,
+  onIncludeDatabasesChange,
   onDefaultDestinationModeChange,
   defaultDestination,
+  isPro = false,
   preview,
 }: QuickSaveViewProps) {
   const [currentView, setCurrentView] = useState<ViewState>(
@@ -79,29 +85,41 @@ export function QuickSaveView({
     : 'idle'
   )
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [selectedDestination, setSelectedDestination] = useState<{ id: string; emoji: string; iconUrl?: string; name: string }>(
-    defaultDestination ?? { emoji: '📝', name: 'Choose a page', id: '' }
+  const [selectedDestination, setSelectedDestination] = useState<{ id: string; emoji: string; iconUrl?: string; name: string; type?: 'page' | 'database' }>(
+    defaultDestination ?? { emoji: '📝', name: 'Choose a page', id: '', type: 'page' }
   )
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [lastInteraction, setLastInteraction] = useState(Date.now())
   const [direction, setDirection] = useState(1)
   const [userHasDragged, setUserHasDragged] = useState(false)
+  const [userHasEngaged, setUserHasEngaged] = useState(false)
   const prevView = useRef(currentView)
 
-  const navigateTo = (view: ViewState) => {
+  const handleInteraction = useCallback(() => {
+    setLastInteraction(Date.now())
+    setUserHasEngaged(true)
+  }, [])
+
+  const navigateTo = useCallback((view: ViewState) => {
     setDirection(getDirection(currentView, view))
     prevView.current = currentView
     setCurrentView(view)
-  }
+    // Reset interaction timer when navigating to give user full duration
+    setLastInteraction(Date.now())
+  }, [currentView])
 
   useEffect(() => {
-    if (!autoDismiss || !dismissTimer || currentView !== 'quick-save' || saveState !== 'idle' || userHasDragged) return
+    // Only auto-dismiss if:
+    // - Auto-dismiss is enabled
+    // - User is on the main quick-save view
+    // - Save is idle (not in progress or completed)
+    // - User has NOT engaged with the widget (no clicks/interactions)
+    if (!autoDismiss || !dismissTimer || currentView !== 'quick-save' || saveState !== 'idle' || userHasEngaged) return
+    
     const timerId = setTimeout(() => onClose(), dismissTimer * 1000)
     return () => clearTimeout(timerId)
-  }, [autoDismiss, dismissTimer, currentView, saveState, onClose, lastInteraction, userHasDragged])
-
-  const handleInteraction = () => setLastInteraction(Date.now())
+  }, [autoDismiss, dismissTimer, currentView, saveState, onClose, userHasEngaged])
 
   const WIDGET_WIDTH = 360
   const WIDGET_HEIGHT = 300 // conservative min height
@@ -155,6 +173,7 @@ export function QuickSaveView({
         destinationName: selectedDestination.name,
         destinationEmoji: selectedDestination.emoji,
         destinationIconUrl: selectedDestination.iconUrl,
+        destinationType: selectedDestination.type || 'page',
         sourceUrl,
       }) as { type: 'SAVE_RESULT'; success: boolean; error?: string }
 
@@ -170,10 +189,14 @@ export function QuickSaveView({
     }
   }
 
-  const handleDestinationSelect = (destination: { id: string; emoji: string; iconUrl?: string; name: string }) => {
+  const handleDestinationSelect = useCallback((destination: { id: string; emoji: string; iconUrl?: string; name: string; type?: 'page' | 'database' }) => {
+    setLastInteraction(Date.now()) // Reset auto-dismiss timer on destination selection
     setSelectedDestination(destination)
-    navigateTo('quick-save')
-  }
+    setDirection(getDirection(currentView, 'quick-save'))
+    prevView.current = currentView
+    setCurrentView('quick-save')
+    setLastInteraction(Date.now())
+  }, [currentView])
 
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
@@ -187,6 +210,7 @@ export function QuickSaveView({
     const viewContent: Record<ViewState, React.ReactNode> = {
       'destination-picker': (
         <DestinationPicker
+          key="destination-picker-stable"
           onBack={() => navigateTo('quick-save')}
           onSelect={handleDestinationSelect}
           onCreateNew={() => navigateTo('create-page')}
@@ -205,10 +229,13 @@ export function QuickSaveView({
           includeSourceUrl={includeSourceUrl}
           includeDateTime={includeDateTime}
           includeStamp={includeStamp}
-          defaultDestinationMode={defaultDestinationMode}
+          includeDatabases={includeDatabases}
           onIncludeSourceUrlChange={onIncludeSourceUrlChange}
           onIncludeDateTimeChange={onIncludeDateTimeChange}
           onIncludeStampChange={onIncludeStampChange}
+          onIncludeDatabasesChange={onIncludeDatabasesChange}
+          isPro={isPro}
+          defaultDestinationMode={defaultDestinationMode}
           onDefaultDestinationModeChange={onDefaultDestinationModeChange}
         />
       ),
@@ -246,7 +273,7 @@ export function QuickSaveView({
               }`}
             >
               <div className="flex items-center gap-2">
-                <PageIcon emoji={selectedDestination.emoji} iconUrl={selectedDestination.iconUrl} size={20} />
+                <PageIcon emoji={selectedDestination.emoji} iconUrl={selectedDestination.iconUrl} size={20} type={selectedDestination.type} />
                 <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>{selectedDestination.name}</span>
               </div>
               <ChevronDown className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
@@ -280,14 +307,14 @@ export function QuickSaveView({
                 </motion.div>
               ) : saveState === 'error' ? (
                 <motion.div key="error" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-                  {saveError?.toLowerCase().includes('limit') ? (
+                  {saveError?.toLowerCase().includes('limit') && !isPro ? (
                     <>
                       <div className={`px-3 py-2.5 rounded-lg border text-center ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
-                        <div className="text-sm font-medium text-amber-400 mb-0.5">Daily limit reached</div>
-                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>You've used all 10 free saves today. Resets at midnight.</div>
+                        <div className="text-sm font-medium text-amber-400 mb-0.5">Monthly limit reached</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>You've used all 75 free saves this month.</div>
                       </div>
                       <a
-                        href="https://clipflow.tools/upgrade"
+                        href="https://www.notionflow.io/clipper/pricing"
                         target="_blank"
                         rel="noreferrer"
                         className="w-full h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
@@ -332,19 +359,9 @@ export function QuickSaveView({
     }
 
     return (
-      <AnimatePresence mode="wait" custom={direction}>
-        <motion.div
-          key={currentView}
-          custom={direction}
-          variants={slideVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
-          {viewContent[currentView]}
-        </motion.div>
-      </AnimatePresence>
+      <div>
+        {viewContent[currentView]}
+      </div>
     )
   }
 
@@ -380,7 +397,7 @@ export function QuickSaveView({
           >
             <div className="flex items-center gap-2">
               <div className={`rounded-lg p-0.5 ${isDark ? 'shadow-[0_0_12px_rgba(124,92,252,0.25)]' : ''}`}>
-                <ClipFlowLogo size={16} />
+                <ClipperLogo size={16} />
               </div>
               {currentView === 'quick-save' ? (
                 <div className="flex items-baseline gap-1.5">

@@ -1,6 +1,6 @@
 import { getSettings, getStorage, setStorage } from "../lib/storage"
 import { launchNotionOAuth, disconnectNotion } from "../lib/oauth"
-import { appendTextToPage, recordRecentSave, searchNotionPages, createNotionPage } from "../lib/notion"
+import { appendTextToPage, recordRecentSave, searchNotionPages, createNotionPage, createPageInDatabase } from "../lib/notion"
 import { canSave, incrementSaveCount } from "../lib/limits"
 import { verifyLicense, saveLicenseToStorage, getLicenseFromStorage } from "../lib/license"
 import type { ExtensionMessage, ShowWidgetMessage, SaveResultMessage } from "../lib/messages"
@@ -98,6 +98,7 @@ async function handleCopyDetected(
       emoji: settings.lastSavedDestinationEmoji,
       iconUrl: settings.lastSavedDestinationIconUrl ?? undefined,
       name: settings.lastSavedDestinationName,
+      type: settings.lastSavedDestinationType ?? 'page',
     }
   } else if (mode === 'fixed' && settings.defaultDestinationId) {
     defaultDestination = {
@@ -105,8 +106,12 @@ async function handleCopyDetected(
       emoji: settings.defaultDestinationEmoji,
       iconUrl: settings.defaultDestinationIconUrl ?? undefined,
       name: settings.defaultDestinationName,
+      type: settings.defaultDestinationType ?? 'page',
     }
   }
+
+  const license = await getStorage("license")
+  const isPro = !!(license?.is_pro && (license.expires_at === 0 || license.expires_at > Date.now()))
 
   const showMessage: ShowWidgetMessage = {
     type: "SHOW_WIDGET",
@@ -117,6 +122,7 @@ async function handleCopyDetected(
       theme: settings.theme,
       autoDismiss: settings.autoDismiss,
       dismissTimer: settings.dismissTimer,
+      isPro,
     },
   }
 
@@ -126,21 +132,50 @@ async function handleCopyDetected(
 }
 
 async function handleSaveToNotion(
-  message: { type: "SAVE_TO_NOTION"; text: string; destinationId: string; destinationName: string; destinationEmoji: string; destinationIconUrl?: string; sourceUrl: string },
+  message: { type: "SAVE_TO_NOTION"; text: string; destinationId: string; destinationName: string; destinationEmoji: string; destinationIconUrl?: string; destinationType?: 'page' | 'database'; sourceUrl: string },
   _tabId: number | undefined
 ): Promise<SaveResultMessage> {
   try {
+    console.log('[Clipper] Starting save to Notion:', { 
+      destinationType: message.destinationType, 
+      destinationId: message.destinationId,
+      destinationName: message.destinationName 
+    })
+
     const check = await canSave()
     if (!check.allowed) {
+      console.error('[Clipper] Save limit reached:', check.reason)
       return { type: "SAVE_RESULT", success: false, error: check.reason ?? "Monthly limit reached. Upgrade to Pro for unlimited saves." }
     }
 
     const settings = await getSettings()
-    await appendTextToPage(message.destinationId, message.text, {
-      sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
+    console.log('[Clipper] Settings loaded:', { 
+      includeSourceUrl: settings.includeSourceUrl,
       includeDateTime: settings.includeDateTime,
-      includeStamp: settings.includeStamp,
+      includeStamp: settings.includeStamp 
     })
+
+    const isDatabase = message.destinationType === 'database'
+    
+    if (isDatabase) {
+      console.log('[Clipper] Creating page in database...')
+      // Create new page in database
+      await createPageInDatabase(message.destinationId, message.text, {
+        sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
+        includeDateTime: settings.includeDateTime,
+        includeStamp: settings.includeStamp,
+      })
+    } else {
+      console.log('[Clipper] Appending to page...')
+      // Append to existing page
+      await appendTextToPage(message.destinationId, message.text, {
+        sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
+        includeDateTime: settings.includeDateTime,
+        includeStamp: settings.includeStamp,
+      })
+    }
+    
+    console.log('[Clipper] Save successful, updating metadata...')
     await incrementSaveCount()
     // Update last-saved destination
     const currentSettings = await getSettings()
@@ -150,6 +185,7 @@ async function handleSaveToNotion(
       lastSavedDestinationEmoji: message.destinationEmoji,
       lastSavedDestinationName: message.destinationName,
       lastSavedDestinationIconUrl: message.destinationIconUrl ?? null,
+      lastSavedDestinationType: message.destinationType ?? 'page',
     })
     await recordRecentSave({
       text: message.text,
@@ -157,12 +193,16 @@ async function handleSaveToNotion(
       destinationName: message.destinationName,
       destinationEmoji: message.destinationEmoji,
       destinationIconUrl: message.destinationIconUrl,
+      destinationType: message.destinationType,
       sourceUrl: message.sourceUrl,
     })
 
+    console.log('[Clipper] Save completed successfully')
     return { type: "SAVE_RESULT", success: true }
   } catch (err) {
+    console.error('[Clipper] Save failed with error:', err)
     const error = err instanceof Error ? err.message : "Save failed"
+    console.error('[Clipper] Error message:', error)
     return { type: "SAVE_RESULT", success: false, error }
   }
 }
@@ -191,9 +231,14 @@ async function handleCreatePage(
 
 async function handleSearchPages(query: string): Promise<{ success: boolean; pages?: import("../lib/notion").NotionPage[]; error?: string }> {
   try {
-    const pages = await searchNotionPages(query)
+    const settings = await getSettings()
+    const includeDatabases = settings.includeDatabases ?? false
+    console.log('[Clipper] handleSearchPages called:', { query, includeDatabases })
+    const pages = await searchNotionPages(query, includeDatabases)
+    console.log('[Clipper] Search successful, found pages:', pages.length)
     return { success: true, pages }
   } catch (err) {
+    console.error('[Clipper] Search failed:', err)
     return { success: false, error: err instanceof Error ? err.message : "Search failed" }
   }
 }

@@ -18,6 +18,9 @@ interface SettingsPanelProps {
   onIncludeSourceUrlChange?: (v: boolean) => void
   onIncludeDateTimeChange?: (v: boolean) => void
   onIncludeStampChange?: (v: boolean) => void
+  includeDatabases?: boolean
+  onIncludeDatabasesChange?: (v: boolean) => void
+  isPro?: boolean
   defaultDestinationMode?: 'fixed' | 'last-saved'
   onDefaultDestinationModeChange?: (mode: 'fixed' | 'last-saved') => void
 }
@@ -70,6 +73,9 @@ export function SettingsPanel({
   onIncludeSourceUrlChange,
   onIncludeDateTimeChange,
   onIncludeStampChange,
+  includeDatabases = false,
+  onIncludeDatabasesChange,
+  isPro = false,
   defaultDestinationMode = 'fixed',
   onDefaultDestinationModeChange,
 }: SettingsPanelProps) {
@@ -103,7 +109,7 @@ export function SettingsPanel({
   useEffect(() => {
     getSettings().then(s => {
       if (s.newPageParentId) {
-        setParentPage({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName, iconUrl: s.newPageParentIconUrl ?? undefined })
+        setParentPage({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName, iconUrl: s.newPageParentIconUrl ?? undefined, type: 'page' })
       }
     })
   }, [])
@@ -261,7 +267,7 @@ export function SettingsPanel({
             className={`w-full h-10 px-3 flex items-center justify-between rounded-lg transition-colors border ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.07] border-white/[0.07]' : 'bg-gray-100 hover:bg-gray-200 border-transparent'}`}
           >
             <div className="flex items-center gap-2">
-              <PageIcon emoji={parentPage?.emoji ?? '📄'} iconUrl={parentPage?.iconUrl} size={18} />
+              <PageIcon emoji={parentPage?.emoji ?? '📄'} iconUrl={parentPage?.iconUrl} size={18} type={parentPage?.type} />
               <span className={`text-sm truncate ${parentPage ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>
                 {parentPage?.name ?? 'Not set — tap to choose'}
               </span>
@@ -300,7 +306,7 @@ export function SettingsPanel({
                         : isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-gray-100'
                     }`}
                   >
-                    <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
+                    <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} type={page.type} />
                     <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
                     {parentPage?.id === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
                   </button>
@@ -309,6 +315,32 @@ export function SettingsPanel({
             </div>
           )}
             </>
+          )}
+        </section>
+
+        <div className={`border-t ${isDark ? 'border-white/10' : 'border-black/10'}`} />
+
+        {/* ── Advanced (Pro) ── */}
+        <section className="space-y-3">
+          <div className="text-[10px] uppercase tracking-wider text-gray-500">Advanced {!isPro && '(Pro)'}</div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Include databases</div>
+              <div className="text-xs text-gray-500 mt-0.5">Show databases alongside pages (marked with a blue dot)</div>
+            </div>
+            {isPro ? (
+              <Toggle on={includeDatabases} onToggle={() => onIncludeDatabasesChange?.(!includeDatabases)} isDark={isDark} />
+            ) : (
+              <div className="relative">
+                <Toggle on={false} onToggle={() => {}} isDark={isDark} />
+                <div className="absolute inset-0 cursor-not-allowed" />
+              </div>
+            )}
+          </div>
+          {!isPro && (
+            <div className={`px-3 py-2 rounded-lg text-xs ${isDark ? 'bg-white/[0.04] text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+              Upgrade to Pro to enable database support. New pages will be created in databases with auto-generated titles.
+            </div>
           )}
         </section>
 
@@ -340,7 +372,7 @@ export function SettingsPanel({
                     className={`w-full px-3 py-2 flex items-start gap-2 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}
                   >
                     <div className="mt-0.5 shrink-0">
-                      <PageIcon emoji={item.destinationEmoji || '📄'} iconUrl={item.destinationIconUrl} size={16} />
+                      <PageIcon emoji={item.destinationEmoji || '📄'} iconUrl={item.destinationIconUrl} size={16} type={(item as any).destinationType} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className={`text-xs ${expandedId === item.id ? 'whitespace-pre-wrap break-words' : 'truncate'} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>

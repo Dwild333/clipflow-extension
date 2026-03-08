@@ -4,8 +4,14 @@ import type { NotionPage } from '../lib/notion'
 import { PageIcon } from './PageIcon'
 
 async function searchPagesViaBackground(query: string): Promise<NotionPage[]> {
+  console.log('[Clipper DestinationPicker] Searching pages with query:', query)
   const result = await chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query }) as { success: boolean; pages?: NotionPage[]; error?: string }
-  if (!result?.success) throw new Error(result?.error || 'Search failed')
+  console.log('[Clipper DestinationPicker] Search result:', result)
+  if (!result?.success) {
+    console.error('[Clipper DestinationPicker] Search failed:', result?.error)
+    throw new Error(result?.error || 'Search failed')
+  }
+  console.log('[Clipper DestinationPicker] Found pages:', result.pages?.length)
   return result.pages ?? []
 }
 
@@ -23,6 +29,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
   const [searchResults, setSearchResults] = useState<NotionPage[]>([])
   const [loadError, setLoadError] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // Load recent pages on mount
   useEffect(() => {
@@ -30,6 +37,11 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
     searchPagesViaBackground('')
       .then(pages => { setRecentPages(pages); setIsSearching(false) })
       .catch(() => { setLoadError(true); setIsSearching(false) })
+  }, [])
+
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus()
   }, [])
 
   const handleSearch = (value: string) => {
@@ -53,16 +65,17 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
         <div className="relative">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
           <input
+            ref={inputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search pages..."
+            autoComplete="off"
             className={`w-full h-10 pl-10 pr-10 border focus:border-indigo-500/50 rounded-lg text-sm outline-none transition-colors ${
               isDark
                 ? 'bg-[#1A1A1A] border-transparent text-white placeholder:text-gray-600'
                 : 'bg-gray-100 border-transparent text-black placeholder:text-gray-500'
             }`}
-            autoFocus
           />
           {searchQuery && (
             <button
@@ -94,7 +107,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
                   onClick={() => onSelect(page)}
                   className={`w-full h-9 px-3 flex items-center gap-2 rounded-md transition-colors ${isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-200'}`}
                 >
-                  <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} />
+                  <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} type={page.type} />
                   <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>
                     {searchQuery
                       ? page.name.split(new RegExp(`(${searchQuery})`, 'gi')).map((part: string, i: number) =>

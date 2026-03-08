@@ -44,9 +44,11 @@
       "activeTab",
       "clipboardRead",
       "identity",
-      "alarms"
+      "alarms",
+      "scripting"
     ],
     "host_permissions": [
+      "<all_urls>",
       "https://api.notion.com/*",
       "https://www.notionflow.io/*",
       "https://notionflow.io/*"

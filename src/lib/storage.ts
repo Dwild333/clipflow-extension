@@ -1,4 +1,4 @@
-export interface ClipFlowStorage {
+export interface ClipperStorage {
   auth: {
     accessToken: string | null
     workspaceId: string | null
@@ -13,6 +13,7 @@ export interface ClipFlowStorage {
     defaultDestinationEmoji: string
     defaultDestinationName: string
     defaultDestinationIconUrl: string | null
+    defaultDestinationType: 'page' | 'database'
     autoDismiss: boolean
     dismissTimer: number
     widgetEnabled: boolean
@@ -25,10 +26,13 @@ export interface ClipFlowStorage {
     lastSavedDestinationEmoji: string
     lastSavedDestinationName: string
     lastSavedDestinationIconUrl: string | null
+    lastSavedDestinationType: 'page' | 'database'
     newPageParentId: string | null
     newPageParentEmoji: string
     newPageParentName: string
     newPageParentIconUrl: string | null
+    newPageParentType: 'page' | 'database'
+    includeDatabases: boolean
   }
 
   license: {
@@ -51,6 +55,7 @@ export interface ClipFlowStorage {
     destinationName: string
     destinationEmoji: string
     destinationIconUrl?: string
+    destinationType?: 'page' | 'database'
     savedAt: string
     sourceUrl: string
   }>
@@ -58,12 +63,13 @@ export interface ClipFlowStorage {
   onboardingComplete: boolean
 }
 
-export const DEFAULT_SETTINGS: ClipFlowStorage['settings'] = {
+export const DEFAULT_SETTINGS: ClipperStorage['settings'] = {
   theme: 'dark',
   defaultDestinationId: null,
   defaultDestinationEmoji: '📝',
   defaultDestinationName: 'Choose a page',
   defaultDestinationIconUrl: null,
+  defaultDestinationType: 'page' as const,
   autoDismiss: false,
   dismissTimer: 5,
   widgetEnabled: true,
@@ -76,28 +82,36 @@ export const DEFAULT_SETTINGS: ClipFlowStorage['settings'] = {
   lastSavedDestinationEmoji: '📝',
   lastSavedDestinationName: 'Last saved page',
   lastSavedDestinationIconUrl: null,
+  lastSavedDestinationType: 'page' as const,
   newPageParentId: null,
   newPageParentEmoji: '📄',
   newPageParentName: 'Choose a parent page',
   newPageParentIconUrl: null,
+  newPageParentType: 'page' as const,
+  includeDatabases: false,
 }
 
-export async function getStorage<K extends keyof ClipFlowStorage>(
+export async function getStorage<K extends keyof ClipperStorage>(
   key: K
-): Promise<ClipFlowStorage[K] | undefined> {
+): Promise<ClipperStorage[K] | undefined> {
   const result = await chrome.storage.local.get(key)
   return result[key]
 }
 
-export async function setStorage<K extends keyof ClipFlowStorage>(
+export async function setStorage<K extends keyof ClipperStorage>(
   key: K,
-  value: ClipFlowStorage[K]
+  value: ClipperStorage[K]
 ): Promise<void> {
   await chrome.storage.local.set({ [key]: value })
 }
 
-export async function getSettings(): Promise<ClipFlowStorage['settings']> {
+export async function getSettings(): Promise<ClipperStorage['settings']> {
   const settings = await getStorage('settings')
   if (!settings) return DEFAULT_SETTINGS
-  return { ...settings, dismissTimer: Math.min(settings.dismissTimer ?? 5, 10) }
+  // Merge with defaults to ensure new fields are present for existing users
+  return { 
+    ...DEFAULT_SETTINGS, 
+    ...settings, 
+    dismissTimer: Math.min(settings.dismissTimer ?? 5, 10) 
+  }
 }

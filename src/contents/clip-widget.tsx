@@ -28,8 +28,10 @@ interface WidgetState {
   includeSourceUrl: boolean
   includeDateTime: boolean
   includeStamp: boolean
+  includeDatabases: boolean
   defaultDestinationMode: 'fixed' | 'last-saved'
   defaultDestination: { id: string; emoji: string; iconUrl?: string; name: string } | null
+  isPro: boolean
 }
 
 export default function ClipWidget() {
@@ -44,8 +46,10 @@ export default function ClipWidget() {
     includeSourceUrl: false,
     includeDateTime: false,
     includeStamp: false,
+    includeDatabases: false,
     defaultDestinationMode: 'fixed' as const,
     defaultDestination: null,
+    isPro: false,
   })
 
   const isDraggingRef = useRef(false)
@@ -65,23 +69,16 @@ export default function ClipWidget() {
         text: message.text,
         sourceUrl: window.location.href,
         position: message.position,
-        theme: settings.theme,
-        autoDismiss: settings.autoDismiss,
-        dismissTimer: settings.dismissTimer,
+        theme: message.settings.theme,
+        autoDismiss: message.settings.autoDismiss,
+        dismissTimer: message.settings.dismissTimer,
         includeSourceUrl: settings.includeSourceUrl ?? false,
         includeDateTime: settings.includeDateTime ?? false,
         includeStamp: settings.includeStamp ?? false,
+        includeDatabases: settings.includeDatabases ?? false,
         defaultDestinationMode: settings.defaultDestinationMode ?? 'fixed',
-        defaultDestination: (() => {
-          const mode = settings.defaultDestinationMode ?? 'fixed'
-          if (mode === 'last-saved' && settings.lastSavedDestinationId) {
-            return { id: settings.lastSavedDestinationId, emoji: settings.lastSavedDestinationEmoji, iconUrl: settings.lastSavedDestinationIconUrl ?? undefined, name: settings.lastSavedDestinationName }
-          }
-          if (mode === 'fixed' && settings.defaultDestinationId) {
-            return { id: settings.defaultDestinationId, emoji: settings.defaultDestinationEmoji, iconUrl: settings.defaultDestinationIconUrl ?? undefined, name: settings.defaultDestinationName }
-          }
-          return null
-        })(),
+        defaultDestination: message.defaultDestination,
+        isPro: message.settings.isPro,
       })
     }
 
@@ -100,12 +97,22 @@ export default function ClipWidget() {
 
   // Dismiss on click outside the shadow root (but not during/after drag)
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (isDraggingRef.current) return
-      if (widget.visible) hideWidget()
+      if (!widget.visible) return
+      
+      // Check if click is inside the shadow host using composedPath (works with Shadow DOM)
+      const shadowHost = document.getElementById('clipflow-widget-host')
+      if (!shadowHost) return
+      
+      // composedPath() returns the event's path through shadow boundaries
+      const path = e.composedPath()
+      if (path.includes(shadowHost)) return
+      
+      hideWidget()
     }
-    document.addEventListener("click", handleClickOutside)
-    return () => document.removeEventListener("click", handleClickOutside)
+    document.addEventListener("click", handleClickOutside, true) // Use capture phase
+    return () => document.removeEventListener("click", handleClickOutside, true)
   }, [widget.visible, hideWidget])
 
   if (!widget.visible) return null
@@ -132,12 +139,15 @@ export default function ClipWidget() {
       includeSourceUrl={widget.includeSourceUrl}
       includeDateTime={widget.includeDateTime}
       includeStamp={widget.includeStamp}
+      includeDatabases={widget.includeDatabases}
       defaultDestinationMode={widget.defaultDestinationMode}
       onIncludeSourceUrlChange={(includeSourceUrl) => { setWidget((prev) => ({ ...prev, includeSourceUrl })); persistSettings({ includeSourceUrl }) }}
       onIncludeDateTimeChange={(includeDateTime) => { setWidget((prev) => ({ ...prev, includeDateTime })); persistSettings({ includeDateTime }) }}
       onIncludeStampChange={(includeStamp) => { setWidget((prev) => ({ ...prev, includeStamp })); persistSettings({ includeStamp }) }}
+      onIncludeDatabasesChange={(includeDatabases) => { setWidget((prev) => ({ ...prev, includeDatabases })); persistSettings({ includeDatabases }) }}
       onDefaultDestinationModeChange={(defaultDestinationMode) => { setWidget((prev) => ({ ...prev, defaultDestinationMode })); persistSettings({ defaultDestinationMode }) }}
       defaultDestination={widget.defaultDestination}
+      isPro={widget.isPro}
     />
   )
 }

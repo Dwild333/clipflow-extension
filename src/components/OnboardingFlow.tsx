@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Check, Clipboard, Zap, ChevronRight, Search } from 'lucide-react'
-import { ClipFlowLogo } from './ClipFlowLogo'
+import { ClipperLogo } from './ClipperLogo'
 import { setStorage, getSettings } from '../lib/storage'
 import type { NotionPage } from '../lib/notion'
 
@@ -69,7 +69,7 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
     <div className={`w-[320px] rounded-2xl border overflow-hidden ${isDark ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-black/10'}`}>
       {/* Header */}
       <div className={`px-4 py-3 flex items-center gap-2.5 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-        <ClipFlowLogo size={28} />
+        <ClipperLogo size={28} />
         <div>
           <div className="flex items-baseline gap-1.5">
               <span className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>

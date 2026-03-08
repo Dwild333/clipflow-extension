@@ -4,7 +4,7 @@ import type { Theme } from './types'
 export const isDarkTheme = (theme: Theme = 'dark') => theme !== 'light'
 
 /**
- * Shared color tokens for ClipFlow glassmorphic UI.
+ * Shared color tokens for Clipper glassmorphic UI.
  * Returns Tailwind class strings for common patterns.
  */
 export function themeColors(theme: Theme = 'dark') {

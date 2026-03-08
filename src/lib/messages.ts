@@ -23,11 +23,12 @@ export interface ShowWidgetMessage {
   type: 'SHOW_WIDGET'
   text: string
   position: { x: number; y: number }
-  defaultDestination: { id: string; emoji: string; iconUrl?: string; name: string } | null
+  defaultDestination: { id: string; emoji: string; iconUrl?: string; name: string; type?: 'page' | 'database' } | null
   settings: {
     theme: 'dark' | 'light'
     autoDismiss: boolean
     dismissTimer: number
+    isPro: boolean
   }
 }
 
@@ -38,6 +39,7 @@ export interface SaveToNotionMessage {
   destinationName: string
   destinationEmoji: string
   destinationIconUrl?: string
+  destinationType?: 'page' | 'database'
   sourceUrl: string
 }
 

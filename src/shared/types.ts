@@ -1,4 +1,4 @@
-/** Shared theme type used across all ClipFlow components */
+/** Shared theme type used across all Clipper components */
 export type Theme = 'dark' | 'light'
 
 /** A Notion page destination */

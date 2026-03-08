@@ -1,17 +1,17 @@
 import icon from '../../assets/icon.png'
 
-interface ClipFlowLogoProps {
+interface ClipperLogoProps {
   size?: number
   className?: string
 }
 
-export function ClipFlowLogo({ size = 28, className = '' }: ClipFlowLogoProps) {
+export function ClipperLogo({ size = 28, className = '' }: ClipperLogoProps) {
   return (
     <img
       src={icon}
       width={size}
       height={size}
-      alt="ClipFlow"
+      alt="Clipper by NotionFlow"
       className={`inline-block shrink-0 rounded-lg ${className}`}
     />
   )

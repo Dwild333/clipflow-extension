@@ -53,12 +53,27 @@ function showReloadBanner() {
     'font-size:13px', 'display:flex', 'align-items:center', 'gap:10px',
     'box-shadow:0 8px 32px rgba(0,0,0,0.4)', 'max-width:320px',
   ].join(';')
-  banner.innerHTML = `
-    <span>🔄</span>
-    <span style="flex:1">Clipper was updated. <strong>Reload this tab</strong> to enable copy detection.</span>
-    <button onclick="location.reload()" style="background:#6366F1;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;white-space:nowrap">Reload</button>
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;line-height:1">×</button>
-  `
+
+  const icon = document.createElement('span')
+  icon.textContent = '🔄'
+
+  const msg = document.createElement('span')
+  msg.style.flex = '1'
+  const strong = document.createElement('strong')
+  strong.textContent = 'Reload this tab'
+  msg.append('Clipper was updated. ', strong, ' to enable copy detection.')
+
+  const reloadBtn = document.createElement('button')
+  reloadBtn.textContent = 'Reload'
+  reloadBtn.style.cssText = 'background:#6366F1;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;white-space:nowrap'
+  reloadBtn.addEventListener('click', () => location.reload())
+
+  const closeBtn = document.createElement('button')
+  closeBtn.textContent = '×'
+  closeBtn.style.cssText = 'background:none;border:none;color:#666;cursor:pointer;font-size:16px;line-height:1'
+  closeBtn.addEventListener('click', () => banner.remove())
+
+  banner.append(icon, msg, reloadBtn, closeBtn)
   document.body?.appendChild(banner)
 }
 
@@ -115,4 +130,16 @@ document.addEventListener("keydown", (event: KeyboardEvent) => {
       sendCopyMessage(selectedText)
     }
   }, 100)
+})
+
+// Intercept programmatic clipboard writes (e.g. ChatGPT/Claude/Grok "Copy" buttons
+// that call navigator.clipboard.writeText directly without firing a copy DOM event).
+// The main-world script (clipboard-interceptor.ts) patches writeText and posts a message.
+window.addEventListener("message", (event: MessageEvent) => {
+  if (event.source !== window) return
+  if (event.data?.type !== "__CLIPFLOW_CLIPBOARD_WRITE__") return
+  const text = event.data.text
+  if (typeof text === "string") {
+    sendCopyMessage(text)
+  }
 })
