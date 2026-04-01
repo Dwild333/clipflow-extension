@@ -1,13 +1,13 @@
 {
   "name": "clipper-by-notionflow",
   "displayName": "Clipper by NotionFlow",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Save clipboard text to Notion in 2 clicks — no tab switching.",
   "author": "NotionFlow",
   "scripts": {
     "dev": "plasmo dev",
-    "build": "plasmo build",
-    "package": "plasmo package"
+    "build": "plasmo build && node scripts/fix-manifest.js",
+    "package": "plasmo build && node scripts/fix-manifest.js && plasmo package --zip-source build/chrome-mv3-prod"
   },
   "dependencies": {
     "plasmo": "0.90.5",
@@ -28,28 +28,18 @@
     "autoprefixer": "10.4.20",
     "postcss": "8.5.3"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "@swc/core",
-      "esbuild",
-      "lmdb",
-      "msgpackr-extract",
-      "sharp"
-    ]
-  },
   "manifest": {
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwizpTntj77iTNyDlziJ8WGYHCKqUBrfiyeXDRggjT5o/1oleF+/GoV6IH/dpPKPKpu+9m0kXvw+mzh0X3u0xCdtwxBRXrB1A0hjkmcwVBo/woO4DGQA3vX+kHsp4zHpmlO2JoyAjgU3BQXDeJJJnyboaAgyC/ogEoy3++bebsi5Nt68iQ3NxaDN/sAvSUy+Jws6/2dC3j/Hb62xUTMaRta+xYZM2iGvtaATGr6vrJKP/vpIYNgoyv6VdQiVNTzjKbQ5sdp36wtlJ+tdrjeb8pGAbWEp58TG2/aHshOxXlL9n0pwbWrhkfI2Anz3+QcHDXHwVgFB8z6UuZEhxLa+t0wIDAQAB",
     "permissions": [
       "storage",
-      "activeTab",
       "clipboardRead",
       "identity",
-      "alarms",
-      "scripting"
+      "alarms"
     ],
     "host_permissions": [
       "<all_urls>",
       "https://api.notion.com/*",
+      "https://app.notionflow.io/*",
       "https://www.notionflow.io/*",
       "https://notionflow.io/*"
     ],

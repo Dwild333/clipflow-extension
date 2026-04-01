@@ -1,4 +1,4 @@
-const FREE_MONTHLY_LIMIT = 75
+const FREE_MONTHLY_LIMIT = 25
 
 export const FREE_HISTORY_LIMIT = 10
 export const PRO_HISTORY_LIMIT = 50

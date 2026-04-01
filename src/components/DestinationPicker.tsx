@@ -4,14 +4,8 @@ import type { NotionPage } from '../lib/notion'
 import { PageIcon } from './PageIcon'
 
 async function searchPagesViaBackground(query: string): Promise<NotionPage[]> {
-  console.log('[Clipper DestinationPicker] Searching pages with query:', query)
   const result = await chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query }) as { success: boolean; pages?: NotionPage[]; error?: string }
-  console.log('[Clipper DestinationPicker] Search result:', result)
-  if (!result?.success) {
-    console.error('[Clipper DestinationPicker] Search failed:', result?.error)
-    throw new Error(result?.error || 'Search failed')
-  }
-  console.log('[Clipper DestinationPicker] Found pages:', result.pages?.length)
+  if (!result?.success) throw new Error(result?.error || 'Search failed')
   return result.pages ?? []
 }
 
@@ -39,12 +33,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
       .catch(() => { setLoadError(true); setIsSearching(false) })
   }, [])
 
-  // Focus input on mount
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
-
-  const handleSearch = (value: string) => {
+const handleSearch = (value: string) => {
     setSearchQuery(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (!value.trim()) { setSearchResults([]); return }
@@ -108,7 +97,7 @@ export function DestinationPicker({ onBack, onSelect, onCreateNew, theme = 'dark
                   className={`w-full h-9 px-3 flex items-center gap-2 rounded-md transition-colors ${isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-200'}`}
                 >
                   <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} type={page.type} />
-                  <span className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>
+                  <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-white' : 'text-black'}`}>
                     {searchQuery
                       ? page.name.split(new RegExp(`(${searchQuery})`, 'gi')).map((part: string, i: number) =>
                           part.toLowerCase() === searchQuery.toLowerCase()

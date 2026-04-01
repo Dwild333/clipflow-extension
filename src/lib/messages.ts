@@ -11,6 +11,7 @@ export type MessageType =
   | 'GET_SETTINGS'
   | 'SETTINGS_RESULT'
   | 'CREATE_PAGE'
+  | 'REFRESH_LICENSE'
 
 export interface CopyDetectedMessage {
   type: 'COPY_DETECTED'
@@ -60,6 +61,7 @@ export interface NotionDisconnectMessage {
 export interface SearchPagesMessage {
   type: 'SEARCH_PAGES'
   query: string
+  pagesOnly?: boolean
 }
 
 export interface GetAuthStateMessage {
@@ -72,6 +74,10 @@ export interface CreatePageMessage {
   title: string
 }
 
+export interface RefreshLicenseMessage {
+  type: 'REFRESH_LICENSE'
+}
+
 export type ExtensionMessage =
   | CopyDetectedMessage
   | ShowWidgetMessage
@@ -82,3 +88,4 @@ export type ExtensionMessage =
   | SearchPagesMessage
   | GetAuthStateMessage
   | CreatePageMessage
+  | RefreshLicenseMessage

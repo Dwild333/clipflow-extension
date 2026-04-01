@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Check, Clipboard, Zap, ChevronRight, Search } from 'lucide-react'
+import { Check, Clipboard, Zap, ChevronRight, Search, Crown } from 'lucide-react'
 import { ClipperLogo } from './ClipperLogo'
+import { PageIcon } from './PageIcon'
 import { setStorage, getSettings } from '../lib/storage'
 import type { NotionPage } from '../lib/notion'
 
 interface OnboardingFlowProps {
   theme?: 'dark' | 'light'
   workspaceName?: string | null
+  isPro?: boolean
   onComplete: () => void
 }
 
@@ -23,7 +25,7 @@ const INTRO_STEPS = [
   },
 ]
 
-export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: OnboardingFlowProps) {
+export function OnboardingFlow({ theme = 'dark', workspaceName, isPro = false, onComplete }: OnboardingFlowProps) {
   // step 0,1 = intro slides; step 2 = page picker
   const [step, setStep] = useState(0)
   const [pages, setPages] = useState<NotionPage[]>([])
@@ -31,10 +33,10 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPage, setSelectedPage] = useState<NotionPage | null>(null)
   const isDark = theme !== 'light'
-  const TOTAL_STEPS = INTRO_STEPS.length + 1 // +1 for page picker
+  const TOTAL_STEPS = INTRO_STEPS.length + 1 + (isPro ? 1 : 0)
 
   useEffect(() => {
-    if (step === INTRO_STEPS.length) {
+    if (step === INTRO_STEPS.length + proOffset) {
       setPagesLoading(true)
       chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query: '' })
         .then((res: { success: boolean; pages?: NotionPage[] }) => {
@@ -63,7 +65,11 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
     onComplete()
   }
 
-  const isPagePickerStep = step === INTRO_STEPS.length
+  // Pro users get an extra welcome slide at step 0
+  const proOffset = isPro ? 1 : 0
+  const isProWelcomeStep = isPro && step === 0
+  const introStep = step - proOffset
+  const isPagePickerStep = step === INTRO_STEPS.length + proOffset
 
   return (
     <div className={`w-[320px] rounded-2xl border overflow-hidden ${isDark ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-black/10'}`}>
@@ -74,6 +80,9 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
           <div className="flex items-baseline gap-1.5">
               <span className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>
               <span className={`text-[10px] font-medium tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>by NotionFlow</span>
+              {isPro && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded-full font-medium">PRO</span>
+              )}
             </div>
           <div className="text-[10px] text-gray-500">Connected to {workspaceName || 'your workspace'}</div>
         </div>
@@ -91,16 +100,27 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
         ))}
       </div>
 
+      {/* Pro welcome step */}
+      {isProWelcomeStep && (
+        <div className="px-6 py-5 text-center min-h-[160px] flex flex-col items-center justify-center">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-amber-500/15' : 'bg-amber-50'}`}>
+            <Crown className="w-7 h-7 text-amber-400" />
+          </div>
+          <div className={`text-base font-semibold mb-2 ${isDark ? 'text-white' : 'text-black'}`}>Pro is active</div>
+          <div className="text-sm text-gray-500 leading-relaxed">Unlimited saves, database support, and all future Pro features are unlocked on your account.</div>
+        </div>
+      )}
+
       {/* Intro steps */}
-      {!isPagePickerStep && (() => {
-        const StepIcon = INTRO_STEPS[step].icon
+      {!isPagePickerStep && !isProWelcomeStep && (() => {
+        const StepIcon = INTRO_STEPS[introStep].icon
         return (
           <div className="px-6 py-5 text-center min-h-[160px] flex flex-col items-center justify-center">
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-indigo-500/15' : 'bg-indigo-50'}`}>
               <StepIcon className="w-7 h-7 text-indigo-400" />
             </div>
-            <div className={`text-base font-semibold mb-2 ${isDark ? 'text-white' : 'text-black'}`}>{INTRO_STEPS[step].title}</div>
-            <div className="text-sm text-gray-500 leading-relaxed">{INTRO_STEPS[step].description}</div>
+            <div className={`text-base font-semibold mb-2 ${isDark ? 'text-white' : 'text-black'}`}>{INTRO_STEPS[introStep].title}</div>
+            <div className="text-sm text-gray-500 leading-relaxed">{INTRO_STEPS[introStep].description}</div>
           </div>
         )
       })()}
@@ -139,7 +159,7 @@ export function OnboardingFlow({ theme = 'dark', workspaceName, onComplete }: On
                     : isDark ? 'hover:bg-[#2A2A2A]' : 'hover:bg-gray-100'
                 }`}
               >
-                <span className="text-base">{page.emoji}</span>
+                <PageIcon emoji={page.emoji} iconUrl={page.iconUrl} size={18} type={page.type} />
                 <span className={`text-sm truncate ${isDark ? 'text-white' : 'text-black'}`}>{page.name}</span>
                 {selectedPage?.id === page.id && <Check className="w-3.5 h-3.5 text-indigo-400 ml-auto shrink-0" />}
               </button>

@@ -4,6 +4,9 @@ import { ExtensionPopup } from "./components/ExtensionPopup"
 import { OnboardingFlow } from "./components/OnboardingFlow"
 import { getSettings, getStorage, setStorage } from "./lib/storage"
 
+const CLIPPER_API_URL = process.env.PLASMO_PUBLIC_CLIPPER_API_URL!
+const CLIPPER_API_KEY = process.env.PLASMO_PUBLIC_CLIPPER_API_KEY!
+
 function IndexPopup() {
   const [isConnected, setIsConnected] = useState(false)
   const [isPro, setIsPro] = useState(false)
@@ -31,19 +34,52 @@ function IndexPopup() {
   const [workspaceName, setWorkspaceName] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [accountEmail, setAccountEmail] = useState("")
 
   async function loadState() {
-    const [auth, settings, license, usage] = await Promise.all([
+    setLoading(true)
+
+    const [localAuth, settings, usage, license] = await Promise.all([
       getStorage("auth"),
       getSettings(),
-      getStorage("license"),
       getStorage("usage"),
+      getStorage("license"),
     ])
 
-    const connected = !!auth?.accessToken
+    // Check Pro status via clipper-api (if we have an email)
+    let resolvedPro = false
+    const storedEmail = license?.email ?? ""
+    setAccountEmail(storedEmail)
+
+    if (storedEmail) {
+      try {
+        const res = await fetch(`${CLIPPER_API_URL}/api/verify-pro`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": CLIPPER_API_KEY },
+          body: JSON.stringify({ email: storedEmail }),
+        })
+        if (res.ok) {
+          const data = await res.json() as { is_pro: boolean }
+          resolvedPro = data.is_pro
+        }
+      } catch {
+        // Network failure — use cached status
+        resolvedPro = !!license?.is_pro
+      }
+
+      await setStorage("license", {
+        email: storedEmail,
+        is_pro: resolvedPro,
+        plan: null,
+        verified_at: Date.now(),
+        expires_at: 0,
+      })
+    }
+
+    const connected = !!localAuth?.accessToken
     setIsConnected(connected)
-    setWorkspaceName(auth?.workspaceName ?? null)
-    setIsPro(!!(license?.is_pro && (license.expires_at === 0 || license.expires_at > Date.now())))
+    setWorkspaceName(localAuth?.workspaceName ?? null)
+    setIsPro(resolvedPro)
     setTheme(settings.theme)
     setWidgetEnabled(settings.widgetEnabled)
     setAutoDismiss(settings.autoDismiss ?? false)
@@ -79,6 +115,8 @@ function IndexPopup() {
     loadState()
   }, [])
 
+  // ─── Handlers ────────────────────────────────────────────────────────────────
+
   const handleToggleWidget = async (enabled: boolean) => {
     setWidgetEnabled(enabled)
     const settings = await getSettings()
@@ -86,9 +124,13 @@ function IndexPopup() {
   }
 
   const handleReconnect = async () => {
-    const result = await chrome.runtime.sendMessage({ type: "NOTION_CONNECT" }) as { success: boolean; error?: string }
+    console.log('[Popup] Sending NOTION_CONNECT message...')
+    const result = await chrome.runtime.sendMessage({ type: "NOTION_CONNECT" }) as { success: boolean; connection?: import("./lib/oauth").NotionOAuthResult; error?: string }
+    console.log('[Popup] NOTION_CONNECT result:', result)
     if (result?.success) {
       await loadState()
+    } else {
+      console.error('[Popup] Notion connect failed:', result?.error)
     }
   }
 
@@ -99,7 +141,6 @@ function IndexPopup() {
     setIsPro(false)
     setShowSettings(false)
   }
-
 
   const handleThemeChange = async (newTheme: "dark" | "light") => {
     setTheme(newTheme)
@@ -162,27 +203,131 @@ function IndexPopup() {
     await setStorage("settings", { ...settings, dismissTimer: value })
   }
 
-  const handleOpenSettings = () => {
-    setShowSettings(true)
+  const handleUpgrade = async (period: 'monthly' | 'yearly') => {
+    try {
+      const res = await fetch(`${CLIPPER_API_URL}/api/create-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': CLIPPER_API_KEY },
+        body: JSON.stringify({
+          billing_period: period,
+          app_id: 'clipper',
+          email: accountEmail || undefined,
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to create checkout session')
+      const { url } = await res.json() as { url: string }
+      window.open(url, '_blank')
+    } catch {
+      window.open('https://www.notionflow.io/clipper/pricing', '_blank')
+    }
   }
+
+  const handleRestoreLicense = async (licenseKey: string): Promise<'activated' | 'not_found' | 'inactive' | 'error'> => {
+    if (!accountEmail) return 'error'
+    try {
+      const res = await fetch(`${CLIPPER_API_URL}/api/restore-pro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': CLIPPER_API_KEY },
+        body: JSON.stringify({ license_key: licenseKey, email: accountEmail }),
+      })
+      if (res.status === 404) return 'not_found'
+      if (res.status === 400) return 'inactive'
+      if (res.status === 403) return 'not_found'
+      if (!res.ok) return 'error'
+      // Re-verify so isPro updates immediately
+      const verifyRes = await fetch(`${CLIPPER_API_URL}/api/verify-pro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': CLIPPER_API_KEY },
+        body: JSON.stringify({ email: accountEmail }),
+      })
+      if (verifyRes.ok) {
+        const data = await verifyRes.json() as { is_pro: boolean }
+        if (data.is_pro) {
+          setIsPro(true)
+          await setStorage("license", {
+            email: accountEmail,
+            is_pro: true,
+            plan: null,
+            verified_at: Date.now(),
+            expires_at: 0,
+          })
+          return 'activated'
+        }
+      }
+      return 'not_found'
+    } catch {
+      return 'error'
+    }
+  }
+
+  const handleRefreshLicense = async (emailOverride?: string): Promise<'activated' | 'not_found' | 'error'> => {
+    const email = emailOverride || accountEmail
+    if (!email) return 'error'
+    try {
+      const res = await fetch(`${CLIPPER_API_URL}/api/verify-pro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': CLIPPER_API_KEY },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) return 'error'
+      const data = await res.json() as { is_pro: boolean }
+      await setStorage("license", {
+        email,
+        is_pro: data.is_pro,
+        plan: null,
+        verified_at: Date.now(),
+        expires_at: 0,
+      })
+      if (data.is_pro) {
+        setIsPro(true)
+        setAccountEmail(email)
+        return 'activated'
+      }
+      return 'not_found'
+    } catch {
+      return 'error'
+    }
+  }
+
+  const handleReset = async () => {
+    await chrome.storage.local.remove(["auth", "license", "recentSaves", "usage", "onboardingComplete"])
+    setIsConnected(false)
+    setWorkspaceName(null)
+    setIsPro(false)
+    setAccountEmail("")
+    setShowSettings(false)
+  }
+
+  const handleEmailUpdate = async (email: string) => {
+    setAccountEmail(email)
+    const license = await getStorage("license")
+    await setStorage("license", {
+      email,
+      is_pro: license?.is_pro ?? false,
+      plan: license?.plan ?? null,
+      verified_at: license?.verified_at ?? Date.now(),
+      expires_at: license?.expires_at ?? 0,
+    })
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+
+  const spinner = (
+    <div className="w-[320px] h-[200px] flex items-center justify-center" style={{ background: 'linear-gradient(180deg, rgba(28,28,32,1) 0%, rgba(14,14,18,1) 100%)' }}>
+      <div className="w-6 h-6 border-2 border-[#333] border-t-indigo-500 rounded-full animate-spin" />
+    </div>
+  )
+
+  if (loading) return spinner
 
   if (showOnboarding) {
     return (
       <OnboardingFlow
         theme={theme}
         workspaceName={workspaceName}
-        onComplete={() => {
-          setShowOnboarding(false)
-        }}
+        isPro={isPro}
+        onComplete={() => setShowOnboarding(false)}
       />
-    )
-  }
-
-  if (loading) {
-    return (
-      <div className="w-[320px] h-[200px] flex items-center justify-center" style={{ background: 'linear-gradient(180deg, rgba(28,28,32,1) 0%, rgba(14,14,18,1) 100%)' }}>
-        <div className="w-6 h-6 border-2 border-[#333] border-t-indigo-500 rounded-full animate-spin" />
-      </div>
     )
   }
 
@@ -192,7 +337,7 @@ function IndexPopup() {
       isConnected={isConnected}
       isPro={isPro}
       savesToday={savesThisMonth}
-      dailyLimit={75}
+      dailyLimit={50}
       widgetEnabled={widgetEnabled}
       workspaceName={workspaceName}
       showSettings={showSettings}
@@ -222,9 +367,14 @@ function IndexPopup() {
       onDefaultDestinationModeChange={handleDefaultDestinationModeChange}
       onDefaultDestinationChange={handleDefaultDestinationChange}
       onNewPageParentChange={handleNewPageParentChange}
-      onActivateLicense={loadState}
-      onOpenSettings={handleOpenSettings}
+      accountEmail={accountEmail}
+      onSignOut={handleReset}
+      onOpenSettings={() => setShowSettings(true)}
       onCloseSettings={() => setShowSettings(false)}
+      onRefreshLicense={handleRefreshLicense}
+      onRestoreLicense={handleRestoreLicense}
+      onUpgrade={handleUpgrade}
+      onEmailUpdate={handleEmailUpdate}
     />
   )
 }

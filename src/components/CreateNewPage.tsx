@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Search, Check } from 'lucide-react'
 import { getSettings } from '../lib/storage'
 import type { NotionPage } from '../lib/notion'
@@ -19,38 +19,51 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
   const [searchQuery, setSearchQuery] = useState('')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isDark = theme !== 'light'
 
-  // Load default parent from settings and fetch pages
+  const searchPages = (query: string) => {
+    setPagesLoading(true)
+    chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query, pagesOnly: true })
+      .then((res: { success: boolean; pages?: NotionPage[] }) => {
+        setPages(res?.pages ?? [])
+        setPagesLoading(false)
+      })
+      .catch(() => setPagesLoading(false))
+  }
+
+  // Load default parent from settings and initial pages on mount
   useEffect(() => {
     getSettings().then(s => {
       if (s.newPageParentId) {
         setSelectedParent({ id: s.newPageParentId, emoji: s.newPageParentEmoji, name: s.newPageParentName, type: 'page' })
       }
     })
-    setPagesLoading(true)
-    chrome.runtime.sendMessage({ type: 'SEARCH_PAGES', query: '' })
-      .then((res: { success: boolean; pages?: NotionPage[] }) => {
-        setPages(res?.pages ?? [])
-        setPagesLoading(false)
-      })
-      .catch(() => setPagesLoading(false))
+    searchPages('')
   }, [])
 
-  const filteredPages = searchQuery
-    ? pages.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : pages
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => searchPages(value), 300)
+  }
 
   const handleCreate = async () => {
     if (!title.trim() || !selectedParent) return
     setCreating(true)
     setError(null)
     try {
-      const result = await chrome.runtime.sendMessage({
-        type: 'CREATE_PAGE',
-        parentPageId: selectedParent.id,
-        title: title.trim(),
-      }) as { success: boolean; page?: NotionPage; error?: string }
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out — try again')), 15000)
+      )
+      const result = await Promise.race([
+        chrome.runtime.sendMessage({
+          type: 'CREATE_PAGE',
+          parentPageId: selectedParent.id,
+          title: title.trim(),
+        }) as Promise<{ success: boolean; page?: NotionPage; error?: string }>,
+        timeout,
+      ])
 
       if (result?.success && result.page) {
         // Persist this parent as the new default
@@ -124,7 +137,7 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={e => handleSearchChange(e.target.value)}
                     placeholder="Search pages..."
                     className={`w-full h-8 pl-8 pr-3 rounded-md text-xs outline-none ${isDark ? 'bg-[#1A1A1A] text-white placeholder:text-gray-600' : 'bg-gray-100 text-black placeholder:text-gray-500'}`}
                     autoFocus
@@ -137,9 +150,9 @@ export function CreateNewPage({ onBack, onCreate, theme = 'dark' }: CreateNewPag
                   <div className="flex justify-center py-4">
                     <div className={`w-4 h-4 border-2 rounded-full animate-spin ${isDark ? 'border-gray-600 border-t-white' : 'border-gray-300 border-t-black'}`} />
                   </div>
-                ) : filteredPages.length === 0 ? (
+                ) : pages.length === 0 ? (
                   <div className="py-3 text-center text-xs text-gray-500">No pages found</div>
-                ) : filteredPages.map(page => (
+                ) : pages.map((page: NotionPage) => (
                   <button
                     key={page.id}
                     onClick={() => { setSelectedParent(page); setShowParentPicker(false); setSearchQuery('') }}

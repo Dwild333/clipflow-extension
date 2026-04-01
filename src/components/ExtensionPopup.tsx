@@ -40,7 +40,12 @@ interface ExtensionPopupProps {
   onNewPageParentChange?: (page: { id: string; emoji: string; iconUrl?: string; name: string }) => void
   onDisconnect?: () => void
   onReconnect?: () => void
-  onActivateLicense?: () => void
+  accountEmail?: string
+  onSignOut?: () => void
+  onRefreshLicense?: (email?: string) => Promise<'activated' | 'not_found' | 'error' | undefined>
+  onRestoreLicense?: (licenseKey: string) => Promise<'activated' | 'not_found' | 'inactive' | 'error' | undefined>
+  onUpgrade?: (period: 'monthly' | 'yearly') => void
+  onEmailUpdate?: (email: string) => void
 }
 
 interface RecentSave {
@@ -69,7 +74,7 @@ export function ExtensionPopup({
   isConnected = true,
   isPro = false,
   savesToday = 7,
-  dailyLimit = 75,
+  dailyLimit = 50,
   widgetEnabled = true,
   workspaceName,
   showSettings = false,
@@ -101,13 +106,23 @@ export function ExtensionPopup({
   onNewPageParentChange,
   onDisconnect,
   onReconnect,
-  onActivateLicense,
+  accountEmail,
+  onSignOut,
+  onRefreshLicense,
+  onRestoreLicense,
+  onUpgrade,
+  onEmailUpdate,
 }: ExtensionPopupProps) {
   const [enabled, setEnabled] = useState(widgetEnabled)
   const [recentSaves, setRecentSaves] = useState<RecentSave[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showAllHistory, setShowAllHistory] = useState(false)
+  const [upgradePending, setUpgradePending] = useState(false)
+  const [activating, setActivating] = useState(false)
+  const [activateResult, setActivateResult] = useState<'not_found' | 'inactive' | 'error' | null>(null)
+  const [showRestoreForm, setShowRestoreForm] = useState(false)
+  const [licenseKeyInput, setLicenseKeyInput] = useState('')
   const isDark = theme !== 'light'
 
   useEffect(() => {
@@ -181,7 +196,12 @@ export function ExtensionPopup({
           onDefaultDestinationChange={onDefaultDestinationChange}
           onNewPageParentChange={onNewPageParentChange}
           onDisconnect={onDisconnect}
-          onActivateLicense={onActivateLicense}
+          accountEmail={accountEmail}
+          onSignOut={onSignOut}
+          onRefreshLicense={onRefreshLicense}
+          onRestoreLicense={onRestoreLicense}
+          onUpgrade={onUpgrade}
+          onEmailUpdate={onEmailUpdate}
         />
       </div>
     )
@@ -380,10 +400,15 @@ export function ExtensionPopup({
                 <span className="text-xs text-amber-400 font-medium">Pro plan — unlimited saves</span>
               </div>
             ) : (
-              <a
-                href="https://www.notionflow.io/#pricing"
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={() => {
+                  if (onUpgrade) {
+                    onUpgrade('yearly')
+                  } else {
+                    window.open('https://www.notionflow.io/clipper/pricing', '_blank')
+                  }
+                  setUpgradePending(true)
+                }}
                 className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between transition-colors ${isDark ? 'bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20' : 'bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'}`}
               >
                 <div className="flex items-center gap-2">
@@ -391,7 +416,7 @@ export function ExtensionPopup({
                   <span className="text-xs text-indigo-400">Upgrade to Pro — unlimited saves</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />
-              </a>
+              </button>
             )}
           </div>
 
@@ -447,7 +472,12 @@ interface SettingsViewProps {
   onDefaultDestinationChange?: (page: NotionPageLite) => void
   onNewPageParentChange?: (page: NotionPageLite) => void
   onDisconnect?: () => void
-  onActivateLicense?: () => void
+  accountEmail?: string
+  onSignOut?: () => void
+  onRefreshLicense?: (email?: string) => Promise<'activated' | 'not_found' | 'error' | undefined>
+  onRestoreLicense?: (licenseKey: string) => Promise<'activated' | 'not_found' | 'inactive' | 'error' | undefined>
+  onUpgrade?: (period: 'monthly' | 'yearly') => void
+  onEmailUpdate?: (email: string) => void
 }
 
 function Toggle({ on, onToggle, isDark }: { on: boolean; onToggle: () => void; isDark: boolean }) {
@@ -502,14 +532,23 @@ function SettingsView({
   onDefaultDestinationChange,
   onNewPageParentChange,
   onDisconnect,
-  onActivateLicense,
+  accountEmail,
+  onSignOut,
+  onRefreshLicense,
+  onRestoreLicense,
+  onUpgrade,
+  onEmailUpdate,
 }: SettingsViewProps) {
   const isDark = theme !== 'light'
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
-  const [emailInput, setEmailInput] = useState('')
-  const [verifying, setVerifying] = useState(false)
-  const [verifyError, setVerifyError] = useState<string | null>(null)
-  const [verifySuccess, setVerifySuccess] = useState(false)
+  const [upgradePending, setUpgradePending] = useState(false)
+  const [activating, setActivating] = useState(false)
+  const [activateResult, setActivateResult] = useState<'not_found' | 'inactive' | 'error' | null>(null)
+  const [showRestoreForm, setShowRestoreForm] = useState(false)
+  const [licenseKeyInput, setLicenseKeyInput] = useState('')
+  const [emailInput, setEmailInput] = useState(accountEmail ?? '')
+  const [checkingEmail, setCheckingEmail] = useState(false)
+  const [emailCheckResult, setEmailCheckResult] = useState<'pro' | 'free' | null>(null)
 
   // Destination picker state
   const [showDestPicker, setShowDestPicker] = useState(false)
@@ -535,45 +574,8 @@ function SettingsView({
   useEffect(() => { if (showDestPicker && destPages.length === 0) loadPages('', setDestPages, setDestLoading) }, [showDestPicker])
   useEffect(() => { if (showParentPicker && parentPages.length === 0) loadPages('', setParentPages, setParentLoading) }, [showParentPicker])
 
-  const handleVerify = async () => {
-    const email = emailInput.trim().toLowerCase()
-    if (!email) return
-    setVerifying(true)
-    setVerifyError(null)
-    try {
-      const res = await fetch('https://www.notionflow.io/api/license/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, app_id: 'clipper' }),
-      })
-      const data = await res.json() as { is_pro: boolean; plan: string | null; current_period_end: string | null; error?: string }
-      if (!res.ok) throw new Error(data.error ?? 'Verification failed')
-      if (!data.is_pro) {
-        setVerifyError('No active Pro subscription found for this email.')
-      } else {
-        await chrome.storage.local.set({
-          license: {
-            email,
-            is_pro: true,
-            plan: data.plan,
-            verified_at: Date.now(),
-            expires_at: data.current_period_end ? new Date(data.current_period_end).getTime() : 0,
-          },
-        })
-        setEmailInput('')
-        setVerifySuccess(true)
-        onActivateLicense?.()
-      }
-    } catch (err) {
-      setVerifyError(err instanceof Error ? err.message : 'Could not connect — check your internet connection')
-    } finally {
-      setVerifying(false)
-    }
-  }
-
   const handleManageSubscription = async () => {
-    const result = await chrome.storage.local.get('license')
-    const email = result?.license?.email
+    const email = accountEmail
     if (!email) return
     try {
       const res = await fetch('https://www.notionflow.io/api/stripe/portal', {
@@ -786,7 +788,7 @@ function SettingsView({
               ) : (
                 <div className="relative">
                   <Toggle on={false} onToggle={() => {}} isDark={isDark} />
-                  <div className="absolute inset-0 cursor-not-allowed" onClick={() => window.open('https://www.notionflow.io/#pricing', '_blank')} />
+                  <div className="absolute inset-0 cursor-not-allowed" onClick={() => window.open('https://www.notionflow.io/clipper/pricing', '_blank')} />
                 </div>
               )}
             </SettingsRow>
@@ -827,49 +829,137 @@ function SettingsView({
                   <div className="flex items-center justify-between">
                     <div>
                       <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>Free Plan</div>
-                      <div className="text-gray-500 text-xs">75 saves / month</div>
+                      <div className="text-gray-500 text-xs">50 saves / month</div>
                     </div>
-                    <a
-                      href="https://www.notionflow.io/#pricing"
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      onClick={() => {
+                        if (onUpgrade) {
+                          onUpgrade('yearly')
+                        } else {
+                          window.open('https://www.notionflow.io/clipper/pricing', '_blank')
+                        }
+                        setUpgradePending(true)
+                      }}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
                     >
                       <Zap className="w-3 h-3" />
                       <span>Upgrade</span>
-                    </a>
+                    </button>
                   </div>
-                  <div className={`border-t pt-3 ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-                    <div className={`text-[11px] mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Already purchased? Enter your email:</div>
-                    <div className="flex gap-2">
+
+                  {/* Email verification — primary method */}
+                  <div className="space-y-2">
+                    <p className={`text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Already purchased? Verify with your email
+                    </p>
+                    <div className="flex gap-1.5">
                       <input
                         type="email"
                         value={emailInput}
-                        onChange={e => { setEmailInput(e.target.value); setVerifyError(null) }}
-                        onKeyDown={e => e.key === 'Enter' && handleVerify()}
-                        placeholder="you@email.com"
-                        className={`flex-1 h-8 px-2.5 rounded-md text-xs outline-none border transition-colors ${
-                          isDark
-                            ? 'bg-[#0D0D0D] border-white/10 text-white placeholder:text-gray-600 focus:border-indigo-500/50'
-                            : 'bg-white border-black/10 text-black placeholder:text-gray-400 focus:border-indigo-400'
-                        }`}
+                        onChange={e => setEmailInput(e.target.value)}
+                        placeholder="you@example.com"
+                        className={`flex-1 min-w-0 px-2.5 py-1.5 rounded-lg text-xs outline-none ${isDark ? 'bg-black/30 border border-white/10 text-white placeholder-white/20' : 'bg-white border border-black/10 text-black placeholder-black/20'}`}
                       />
                       <button
-                        onClick={handleVerify}
-                        disabled={verifying || !emailInput.trim()}
-                        className="h-8 px-3 text-xs font-medium bg-indigo-500 hover:brightness-110 disabled:opacity-50 text-white rounded-md transition-all flex items-center gap-1.5"
+                        onClick={async () => {
+                          const trimmed = emailInput.trim()
+                          if (!trimmed) return
+                          onEmailUpdate?.(trimmed)
+                          setCheckingEmail(true)
+                          setEmailCheckResult(null)
+                          const result = await onRefreshLicense?.(trimmed)
+                          setCheckingEmail(false)
+                          if (result === 'activated') {
+                            setEmailCheckResult('pro')
+                          } else {
+                            setEmailCheckResult('free')
+                          }
+                        }}
+                        disabled={checkingEmail || !emailInput.trim()}
+                        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-400 text-white transition-colors disabled:opacity-40"
                       >
-                        {verifying ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Verify'}
+                        {checkingEmail ? 'Checking...' : 'Check'}
                       </button>
                     </div>
-                    {verifyError && <div className="mt-2 text-[11px] text-red-400">{verifyError}</div>}
-                    {verifySuccess && (
-                      <div className={`mt-2 px-3 py-2.5 rounded-lg ${isDark ? 'bg-green-500/10 border border-green-500/20' : 'bg-green-50 border border-green-200'}`}>
-                        <div className="text-[11px] text-green-400 font-medium mb-1">✓ Pro activated!</div>
-                        <div className={`text-[11px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Close and reopen the extension to see your Pro status.</div>
-                      </div>
+                    {emailCheckResult === 'pro' && (
+                      <p className="text-[10px] text-emerald-400">Pro license found! Refreshing...</p>
+                    )}
+                    {emailCheckResult === 'free' && (
+                      <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No pro license found for this email.</p>
                     )}
                   </div>
+
+                  {/* License key restore — secondary/backup */}
+                  {!showRestoreForm ? (
+                    <button
+                      onClick={() => { setShowRestoreForm(true); setActivateResult(null) }}
+                      className={`text-[10px] transition-colors ${isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      Have a license key instead?
+                    </button>
+                  ) : (
+                    <div className={`rounded-lg p-3 space-y-2 ${isDark ? 'bg-white/[0.03] border border-white/5' : 'bg-gray-50 border border-gray-200'}`}>
+                      <div className="flex items-center justify-between">
+                        <p className={`text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Restore with license key
+                        </p>
+                        <button
+                          onClick={() => { setShowRestoreForm(false); setActivateResult(null) }}
+                          className={`text-[10px] ${isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={licenseKeyInput}
+                        onChange={e => { setLicenseKeyInput(e.target.value.toUpperCase()); setActivateResult(null) }}
+                        placeholder="CLIP-XXXX-XXXX-XXXX"
+                        className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-mono outline-none ${isDark ? 'bg-black/30 border border-white/10 text-white placeholder-white/20' : 'bg-white border border-black/10 text-black placeholder-black/20'}`}
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!licenseKeyInput.trim()) return
+                          setActivating(true)
+                          setActivateResult(null)
+                          const result = await onRestoreLicense?.(licenseKeyInput.trim())
+                          setActivating(false)
+                          if (result !== 'activated') setActivateResult(result ?? 'error')
+                        }}
+                        disabled={activating || !licenseKeyInput.trim()}
+                        className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 ${isDark ? 'bg-white/10 hover:bg-white/15 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                      >
+                        {activating
+                          ? <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Activating…</>
+                          : 'Activate'
+                        }
+                      </button>
+                      {activateResult === 'not_found' && (
+                        <p className={`text-[10px] text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          License key not found. Check your receipt email.
+                        </p>
+                      )}
+                      {activateResult === 'inactive' && (
+                        <p className={`text-[10px] text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          This subscription is no longer active.
+                        </p>
+                      )}
+                      {activateResult === 'error' && (
+                        <p className={`text-[10px] text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          Something went wrong — please try again.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {accountEmail && (
+                    <button
+                      onClick={() => chrome.tabs.create({ url: `https://app.notionflow.io/sign-in?email=${encodeURIComponent(accountEmail)}` })}
+                      className={`w-full text-center text-[11px] py-1.5 rounded-lg transition-colors ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      Manage account on dashboard →
+                    </button>
+                  )}
                 </div>
               )}
             </div>

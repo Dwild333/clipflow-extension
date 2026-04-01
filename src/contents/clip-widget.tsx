@@ -53,6 +53,45 @@ export default function ClipWidget() {
   })
 
   const isDraggingRef = useRef(false)
+  // Direct ref to the rendered widget element — used for reliable hit-testing
+  // in handleClickOutside instead of composedPath/target retargeting, which can
+  // fail on sites like Genspark that intercept or re-dispatch click events.
+  const widgetElRef = useRef<HTMLDivElement | null>(null)
+
+  // On some sites (e.g. Genspark) the <body> has a CSS transform applied for
+  // scroll/animation effects. CSS transforms on ancestors break `position: fixed`,
+  // causing the widget to appear squished or in the wrong position.
+  // Fix: move the shadow host to <html> (which is never transformed) and
+  // hard-reset any page CSS that might bleed onto the host element.
+  useEffect(() => {
+    const host = document.getElementById('clipflow-widget-host')
+    if (!host) return
+
+    // Move out of <body> so ancestor transforms can't capture fixed positioning
+    if (host.parentElement !== document.documentElement) {
+      document.documentElement.appendChild(host)
+    }
+
+    // Hard-reset host layout via setProperty('important') so page CSS can't override.
+    // NOTE: do NOT set pointer-events:none — in shadow DOM that cascades into the
+    // shadow root and makes the entire widget click-transparent.
+    // The host has width:0/height:0 so it covers no page pixels and can't block clicks.
+    const overrides: [string, string][] = [
+      ['position', 'fixed'],
+      ['left', '0'],
+      ['top', '0'],
+      ['width', '0'],
+      ['height', '0'],
+      ['z-index', '2147483647'],
+      ['overflow', 'visible'],
+      ['transform', 'none'],
+      ['zoom', '1'],
+      ['display', 'block'],
+    ]
+    for (const [prop, val] of overrides) {
+      host.style.setProperty(prop, val, 'important')
+    }
+  }, [])
 
   const hideWidget = useCallback(() => {
     setWidget((prev) => ({ ...prev, visible: false }))
@@ -86,32 +125,51 @@ export default function ClipWidget() {
     return () => chrome.runtime.onMessage.removeListener(handleMessage)
   }, [])
 
-  // Dismiss on Escape key
+  // Dismiss on Escape key.
+  // Guard with isTrusted so synthetic keydown events dispatched by LLM sites
+  // (e.g. Genspark fires a fake Escape when focus moves into the shadow DOM)
+  // don't accidentally close the widget.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.isTrusted) return
       if (e.key === "Escape" && widget.visible) hideWidget()
     }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [widget.visible, hideWidget])
 
-  // Dismiss on click outside the shadow root (but not during/after drag)
+  // Dismiss on click outside the widget.
+  // Uses bounding-rect hit testing on the actual rendered element rather than
+  // composedPath / e.target retargeting, which Genspark (and other LLM SPAs)
+  // interfere with via their own capture-phase handlers and event re-dispatching.
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (!e.isTrusted) return
       if (isDraggingRef.current) return
       if (!widget.visible) return
-      
-      // Check if click is inside the shadow host using composedPath (works with Shadow DOM)
+
+      // Primary: bounding-rect check against the actual rendered widget element.
+      // This is fully independent of shadow DOM event mechanics and site-specific
+      // event handling — if the click coordinates land inside the widget, keep it open.
+      const el = widgetElRef.current
+      if (el) {
+        const rect = el.getBoundingClientRect()
+        if (
+          e.clientX >= rect.left && e.clientX <= rect.right &&
+          e.clientY >= rect.top  && e.clientY <= rect.bottom
+        ) return
+      }
+
+      // Fallback: composedPath / target checks (for any browser that can't do the above)
       const shadowHost = document.getElementById('clipflow-widget-host')
-      if (!shadowHost) return
-      
-      // composedPath() returns the event's path through shadow boundaries
-      const path = e.composedPath()
-      if (path.includes(shadowHost)) return
-      
+      if (shadowHost) {
+        if (e.target === shadowHost) return
+        if (e.composedPath().includes(shadowHost)) return
+      }
+
       hideWidget()
     }
-    document.addEventListener("click", handleClickOutside, true) // Use capture phase
+    document.addEventListener("click", handleClickOutside, true)
     return () => document.removeEventListener("click", handleClickOutside, true)
   }, [widget.visible, hideWidget])
 
@@ -124,6 +182,7 @@ export default function ClipWidget() {
 
   return (
     <QuickSaveView
+      widgetRef={widgetElRef}
       position={widget.position}
       onClose={hideWidget}
       clipboardContent={widget.text}

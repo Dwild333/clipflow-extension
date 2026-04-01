@@ -23,15 +23,28 @@ if (!(window as PatchedWindow).__clipflowPatched) {
     return originalWriteText(text)
   }
 
-  // Patch write (used by ChatGPT and other sites that copy HTML + plain text)
+  // Patch write (used by ChatGPT and other sites that copy HTML + plain text).
+  // Prefer text/plain; fall back to text/html with tag stripping for sites
+  // (e.g. some Gemini/Google surfaces) that only include HTML in ClipboardItem.
   const originalWrite = navigator.clipboard.write.bind(navigator.clipboard)
   navigator.clipboard.write = async function (data: ClipboardItem[]): Promise<void> {
     try {
       for (const item of data) {
+        let text = ""
         if (item.types.includes("text/plain")) {
           const blob = await item.getType("text/plain")
-          const text = await blob.text()
-          if (text) window.postMessage({ type: "__CLIPFLOW_CLIPBOARD_WRITE__", text }, "*")
+          text = await blob.text()
+        }
+        if (!text && item.types.includes("text/html")) {
+          const blob = await item.getType("text/html")
+          const html = await blob.text()
+          // Strip HTML tags to get a plain-text approximation
+          const tmp = document.createElement("div")
+          tmp.innerHTML = html
+          text = tmp.innerText ?? tmp.textContent ?? ""
+        }
+        if (text) {
+          window.postMessage({ type: "__CLIPFLOW_CLIPBOARD_WRITE__", text: text.trim() }, "*")
           break
         }
       }

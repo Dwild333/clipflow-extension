@@ -1,3 +1,21 @@
+/* Reset all inherited/external CSS on the shadow host element so that
+   aggressive page stylesheets (e.g. Genspark's Tailwind wildcard rules)
+   can't compress, reflow, or hide the widget.
+   Note: position/z-index/overflow are set imperatively in clip-widget.tsx
+   via setProperty('important') which wins over both page CSS and :host rules. */
+:host {
+  all: initial !important;
+  display: block !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+  font-size: 16px !important;
+  line-height: normal !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,4 +23,13 @@
 /* Ensure backdrop-blur works inside shadow DOM */
 * {
   -webkit-font-smoothing: antialiased;
+}
+
+/* Suppress browser default focus rings — all interactive elements use custom focus styles */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+a:focus {
+  outline: none;
 }

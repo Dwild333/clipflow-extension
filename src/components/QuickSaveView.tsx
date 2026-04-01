@@ -8,6 +8,7 @@ import { CreateNewPage } from './CreateNewPage'
 import { ClipperLogo } from './ClipperLogo'
 
 interface QuickSaveViewProps {
+  widgetRef?: React.RefObject<HTMLDivElement>
   position: { x: number; y: number }
   onClose: () => void
   initialState?: 'default' | 'loading' | 'success' | 'error' | 'picker' | 'create' | 'settings'
@@ -45,6 +46,7 @@ function getDirection(from: ViewState, to: ViewState): number {
 }
 
 export function QuickSaveView({
+  widgetRef,
   position,
   onClose,
   initialState,
@@ -309,9 +311,9 @@ export function QuickSaveView({
                 <motion.div key="error" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
                   {saveError?.toLowerCase().includes('limit') && !isPro ? (
                     <>
-                      <div className={`px-3 py-2.5 rounded-lg border text-center ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
-                        <div className="text-sm font-medium text-amber-400 mb-0.5">Monthly limit reached</div>
-                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>You've used all 75 free saves this month.</div>
+                      <div className={`px-3 py-3 rounded-lg border text-center ${isDark ? 'bg-violet-500/10 border-violet-500/30' : 'bg-violet-50 border-violet-200'}`}>
+                        <div className="text-sm font-semibold text-violet-400 mb-0.5">You've saved 25 clips this month 🎉</div>
+                        <div className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>You're a power user. Unlock unlimited with Pro.</div>
                       </div>
                       <a
                         href="https://www.notionflow.io/clipper/pricing"
@@ -320,7 +322,7 @@ export function QuickSaveView({
                         className="w-full h-10 bg-gradient-to-b from-violet-500 to-indigo-600 hover:brightness-110 active:scale-[0.98] shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
                       >
                         <Zap className="w-4 h-4" />
-                        Upgrade for unlimited saves
+                        Unlock unlimited saves
                       </a>
                     </>
                   ) : (
@@ -367,8 +369,9 @@ export function QuickSaveView({
 
   return (
     <div
-      className={preview ? 'relative' : 'fixed z-[2147483647] animate-in fade-in zoom-in-95 duration-150'}
-      style={preview ? undefined : { left: `${position.x}px`, top: `${position.y}px` }}
+      ref={widgetRef}
+      className={preview ? 'relative' : 'absolute animate-in fade-in zoom-in-95 duration-150'}
+      style={preview ? undefined : { left: `${position.x}px`, top: `${position.y}px`, pointerEvents: 'auto' }}
     >
       <div
         className={`w-[360px] backdrop-blur-[20px] border rounded-2xl overflow-hidden ${
@@ -395,10 +398,8 @@ export function QuickSaveView({
             }`}
             onMouseDown={handleMouseDown}
           >
-            <div className="flex items-center gap-2">
-              <div className={`rounded-lg p-0.5 ${isDark ? 'shadow-[0_0_12px_rgba(124,92,252,0.25)]' : ''}`}>
-                <ClipperLogo size={16} />
-              </div>
+            <div className="flex items-center gap-1.5">
+              <ClipperLogo size={20} />
               {currentView === 'quick-save' ? (
                 <div className="flex items-baseline gap-1.5">
                   <span className={`font-bold text-sm tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Clipper</span>

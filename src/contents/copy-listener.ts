@@ -95,7 +95,9 @@ function sendCopyMessage(text: string) {
   })
 }
 
-// Primary: listen to the copy DOM event
+// Primary: listen to the copy DOM event.
+// Use CAPTURE phase so LLM/SPA sites (ChatGPT, Claude, Gemini, Perplexity, Grok, etc.)
+// that call stopPropagation() on copy events in their own handlers can't silence us.
 document.addEventListener("copy", async (event: ClipboardEvent) => {
   pendingKeyboardCopy = false
   let text = ""
@@ -103,8 +105,8 @@ document.addEventListener("copy", async (event: ClipboardEvent) => {
   if (event.clipboardData) {
     text = event.clipboardData.getData("text/plain")
   }
-  // Many sites (e.g. news sites) intercept copy and replace/clear clipboardData.
-  // Fall back to the current selection text, which is always what the user highlighted.
+  // Many sites (e.g. news sites, LLM chat apps) intercept copy and replace/clear
+  // clipboardData. Fall back to the current selection text.
   if (!text) {
     text = window.getSelection()?.toString() ?? ""
   }
@@ -112,10 +114,12 @@ document.addEventListener("copy", async (event: ClipboardEvent) => {
     try { text = await navigator.clipboard.readText() } catch { /* ignore */ }
   }
   sendCopyMessage(text)
-})
+}, true) // capture phase — fires before page handlers
 
 // Backup: Ctrl+C / Cmd+C keydown — read clipboard after a short delay
-// (clipboard isn't updated until after the copy event fires)
+// (clipboard isn't updated until after the copy event fires).
+// Use CAPTURE phase so LLM sites that intercept keyboard shortcuts in their
+// own capture/bubbling handlers (e.g. to render their own copy UI) don't block us.
 document.addEventListener("keydown", (event: KeyboardEvent) => {
   const isCopy = (event.ctrlKey || event.metaKey) && event.key === "c"
   if (!isCopy) return
@@ -130,7 +134,7 @@ document.addEventListener("keydown", (event: KeyboardEvent) => {
       sendCopyMessage(selectedText)
     }
   }, 100)
-})
+}, true) // capture phase — fires before page handlers
 
 // Intercept programmatic clipboard writes (e.g. ChatGPT/Claude/Grok "Copy" buttons
 // that call navigator.clipboard.writeText directly without firing a copy DOM event).

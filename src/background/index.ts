@@ -2,13 +2,15 @@ import { getSettings, getStorage, setStorage } from "../lib/storage"
 import { launchNotionOAuth, disconnectNotion } from "../lib/oauth"
 import { appendTextToPage, recordRecentSave, searchNotionPages, createNotionPage, createPageInDatabase } from "../lib/notion"
 import { canSave, incrementSaveCount } from "../lib/limits"
-import { verifyLicense, saveLicenseToStorage, getLicenseFromStorage } from "../lib/license"
 import type { ExtensionMessage, ShowWidgetMessage, SaveResultMessage } from "../lib/messages"
 
 // Open uninstall feedback survey when the extension is removed
 chrome.runtime.setUninstallURL("https://notionflow.io/clipper/uninstall")
 
 // ─── Background License Verification ────────────────────────────────────────
+
+const CLIPPER_API_URL = process.env.PLASMO_PUBLIC_CLIPPER_API_URL!
+const CLIPPER_API_KEY = process.env.PLASMO_PUBLIC_CLIPPER_API_KEY!
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create('verify-license', { periodInMinutes: 1440 })
@@ -26,11 +28,26 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 })
 
 async function verifyLicenseInBackground() {
-  const license = await getLicenseFromStorage()
-  if (!license?.email) return
   try {
-    const status = await verifyLicense(license.email)
-    await saveLicenseToStorage(license.email, status)
+    const license = await getStorage("license")
+    const email = license?.email
+    if (!email) return // Free tier user, no email stored — nothing to verify
+
+    const res = await fetch(`${CLIPPER_API_URL}/api/verify-pro`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": CLIPPER_API_KEY },
+      body: JSON.stringify({ email }),
+    })
+    if (!res.ok) return
+    const data = await res.json() as { is_pro: boolean }
+
+    await setStorage("license", {
+      email,
+      is_pro: data.is_pro,
+      plan: null,
+      verified_at: Date.now(),
+      expires_at: 0,
+    })
   } catch {
     // Network failure — keep cached status
   }
@@ -58,7 +75,7 @@ chrome.runtime.onMessage.addListener(
         return true
 
       case "SEARCH_PAGES":
-        handleSearchPages(message.query).then(sendResponse)
+        handleSearchPages(message.query, message.pagesOnly).then(sendResponse)
         return true
 
       case "CREATE_PAGE":
@@ -67,6 +84,14 @@ chrome.runtime.onMessage.addListener(
 
       case "GET_AUTH_STATE":
         handleGetAuthState().then(sendResponse)
+        return true
+
+      case "REFRESH_LICENSE":
+        verifyLicenseInBackground().then(() =>
+          getStorage("license").then(license =>
+            sendResponse({ is_pro: !!(license?.is_pro) })
+          )
+        )
         return true
 
       default:
@@ -110,6 +135,12 @@ async function handleCopyDetected(
     }
   }
 
+  // Convert default destination icon to data URL so content script CSP doesn't block it
+  if (defaultDestination?.iconUrl) {
+    const dataUrl = await fetchIconAsDataUrl(defaultDestination.iconUrl)
+    defaultDestination = { ...defaultDestination, iconUrl: dataUrl }
+  }
+
   const license = await getStorage("license")
   const isPro = !!(license?.is_pro && (license.expires_at === 0 || license.expires_at > Date.now()))
 
@@ -136,29 +167,16 @@ async function handleSaveToNotion(
   _tabId: number | undefined
 ): Promise<SaveResultMessage> {
   try {
-    console.log('[Clipper] Starting save to Notion:', { 
-      destinationType: message.destinationType, 
-      destinationId: message.destinationId,
-      destinationName: message.destinationName 
-    })
-
     const check = await canSave()
     if (!check.allowed) {
-      console.error('[Clipper] Save limit reached:', check.reason)
       return { type: "SAVE_RESULT", success: false, error: check.reason ?? "Monthly limit reached. Upgrade to Pro for unlimited saves." }
     }
 
     const settings = await getSettings()
-    console.log('[Clipper] Settings loaded:', { 
-      includeSourceUrl: settings.includeSourceUrl,
-      includeDateTime: settings.includeDateTime,
-      includeStamp: settings.includeStamp 
-    })
 
     const isDatabase = message.destinationType === 'database'
-    
+
     if (isDatabase) {
-      console.log('[Clipper] Creating page in database...')
       // Create new page in database
       await createPageInDatabase(message.destinationId, message.text, {
         sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
@@ -166,7 +184,6 @@ async function handleSaveToNotion(
         includeStamp: settings.includeStamp,
       })
     } else {
-      console.log('[Clipper] Appending to page...')
       // Append to existing page
       await appendTextToPage(message.destinationId, message.text, {
         sourceUrl: settings.includeSourceUrl ? message.sourceUrl : undefined,
@@ -174,9 +191,26 @@ async function handleSaveToNotion(
         includeStamp: settings.includeStamp,
       })
     }
-    
-    console.log('[Clipper] Save successful, updating metadata...')
+
     await incrementSaveCount()
+
+    // Report clip event to server (fire-and-forget, don't block the save flow)
+    const storage = await chrome.storage.local.get(['license'])
+    const licenseEmail = (storage.license as { email?: string } | undefined)?.email
+    if (licenseEmail) {
+      fetch(`${CLIPPER_API_URL}/api/report-clip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": CLIPPER_API_KEY },
+        body: JSON.stringify({
+          email: licenseEmail,
+          source_url: message.sourceUrl,
+          destination_name: message.destinationName,
+          destination_type: message.destinationType ?? 'page',
+          content_length: message.text?.length ?? 0,
+        }),
+      }).catch(() => {}) // silently ignore reporting failures
+    }
+
     // Update last-saved destination
     const currentSettings = await getSettings()
     await setStorage('settings', {
@@ -197,22 +231,23 @@ async function handleSaveToNotion(
       sourceUrl: message.sourceUrl,
     })
 
-    console.log('[Clipper] Save completed successfully')
     return { type: "SAVE_RESULT", success: true }
   } catch (err) {
-    console.error('[Clipper] Save failed with error:', err)
     const error = err instanceof Error ? err.message : "Save failed"
-    console.error('[Clipper] Error message:', error)
     return { type: "SAVE_RESULT", success: false, error }
   }
 }
 
-async function handleConnect(): Promise<{ success: boolean; error?: string }> {
+async function handleConnect(): Promise<{ success: boolean; connection?: import("../lib/oauth").NotionOAuthResult; error?: string }> {
   try {
-    await launchNotionOAuth()
+    console.log('[NotionConnect] Starting OAuth flow...')
+    const connection = await launchNotionOAuth()
+    console.log('[NotionConnect] OAuth success, saving state...', connection)
     await setStorage("onboardingComplete", false)
-    return { success: true }
+    console.log('[NotionConnect] State saved, returning success')
+    return { success: true, connection }
   } catch (err) {
+    console.error('[NotionConnect] OAuth failed:', err)
     return { success: false, error: err instanceof Error ? err.message : "OAuth failed" }
   }
 }
@@ -229,16 +264,45 @@ async function handleCreatePage(
   }
 }
 
-async function handleSearchPages(query: string): Promise<{ success: boolean; pages?: import("../lib/notion").NotionPage[]; error?: string }> {
+/** Fetch a remote icon URL and return it as a base64 data URL.
+ *  Runs in the service worker so it bypasses page-level CSP in content scripts. */
+async function fetchIconAsDataUrl(url: string): Promise<string | undefined> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 4000)
+    const res = await fetch(url, { signal: controller.signal })
+    clearTimeout(timer)
+    if (!res.ok) return undefined
+    const mime = (res.headers.get('content-type') || 'image/png').split(';')[0]
+    const buf = await res.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    let binary = ''
+    const CHUNK = 8192
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...Array.from(bytes.subarray(i, i + CHUNK)))
+    }
+    return `data:${mime};base64,${btoa(binary)}`
+  } catch {
+    return undefined
+  }
+}
+
+async function handleSearchPages(query: string, pagesOnly?: boolean): Promise<{ success: boolean; pages?: import("../lib/notion").NotionPage[]; error?: string }> {
   try {
     const settings = await getSettings()
-    const includeDatabases = settings.includeDatabases ?? false
-    console.log('[Clipper] handleSearchPages called:', { query, includeDatabases })
+    const includeDatabases = pagesOnly ? false : (settings.includeDatabases ?? false)
     const pages = await searchNotionPages(query, includeDatabases)
-    console.log('[Clipper] Search successful, found pages:', pages.length)
-    return { success: true, pages }
+    // Convert remote icon URLs → data URLs so they render in content scripts
+    // (subject to the host page's CSP) and in the popup (presigned URLs expire).
+    const pagesWithIcons = await Promise.all(
+      pages.map(async (page) => {
+        if (!page.iconUrl) return page
+        const dataUrl = await fetchIconAsDataUrl(page.iconUrl)
+        return { ...page, iconUrl: dataUrl }
+      })
+    )
+    return { success: true, pages: pagesWithIcons }
   } catch (err) {
-    console.error('[Clipper] Search failed:', err)
     return { success: false, error: err instanceof Error ? err.message : "Search failed" }
   }
 }

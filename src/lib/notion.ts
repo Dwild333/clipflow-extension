@@ -17,36 +17,32 @@ async function notionHeaders(): Promise<HeadersInit> {
 
 /** Search Notion pages/databases accessible to the integration */
 export async function searchNotionPages(query: string = "", includeDatabases: boolean = false): Promise<NotionPage[]> {
-  console.log('[Clipper] searchNotionPages called:', { query, includeDatabases })
   const headers = await notionHeaders()
   const body: any = {
     query,
-    sort: { direction: "descending", timestamp: "last_edited_time" },
-    page_size: 20,
+    page_size: 100,
+  }
+  if (!query) {
+    body.sort = { direction: "descending", timestamp: "last_edited_time" }
   }
   // Only filter to pages if databases are not included
   if (!includeDatabases) {
     body.filter = { value: "page", property: "object" }
   }
-  console.log('[Clipper] Search request body:', body)
   const res = await fetch(`${NOTION_API}/search`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
   })
-  console.log('[Clipper] Search response:', { status: res.status, ok: res.ok })
   if (!res.ok) {
-    const errorData = await res.json()
-    console.error('[Clipper] Search error response:', errorData)
+    await res.json()
     throw new Error(`Notion search failed: ${res.status}`)
   }
   const data = await res.json() as { results: NotionAPIPage[] }
-  console.log('[Clipper] Search results:', { count: data.results?.length, results: data.results })
   if (!Array.isArray(data.results)) {
-    console.error('[Clipper] Invalid search response - results is not an array:', data)
     return []
   }
-  return data.results.map(pageFromAPI)
+  return data.results.map(pageFromAPI).filter(p => p.name !== '')
 }
 
 const NOTION_CHUNK_SIZE = 1990  // Notion rich_text max is 2000 chars per element
@@ -67,39 +63,20 @@ function textToBlocks(text: string): object[] {
 
 /** Send blocks in batches of 95 to stay under Notion's 100-block-per-request limit */
 async function appendBlocksBatched(pageId: string, blocks: object[], headers: HeadersInit): Promise<void> {
-  console.log('[Clipper] appendBlocksBatched called with:', { pageId, blockCount: blocks.length })
-  
   for (let i = 0; i < blocks.length; i += NOTION_BLOCK_BATCH) {
     const batch = blocks.slice(i, i + NOTION_BLOCK_BATCH)
-    console.log('[Clipper] Sending batch to Notion API:', { 
-      batchIndex: i / NOTION_BLOCK_BATCH, 
-      batchSize: batch.length,
-      url: `${NOTION_API}/blocks/${pageId}/children`
-    })
-    
     const res = await fetch(`${NOTION_API}/blocks/${pageId}/children`, {
       method: "PATCH",
       headers,
       body: JSON.stringify({ children: batch }),
     })
     
-    console.log('[Clipper] Notion API response:', { 
-      status: res.status, 
-      ok: res.ok,
-      statusText: res.statusText 
-    })
-    
     if (!res.ok) {
       const err = await res.json() as { message?: string }
-      console.error('[Clipper] Notion API error:', err)
       throw new Error(err.message || `Append failed: ${res.status}`)
     }
-    
-    const responseData = await res.json()
-    console.log('[Clipper] Notion API success response:', responseData)
+    await res.json()
   }
-  
-  console.log('[Clipper] All batches sent successfully')
 }
 
 /** Append a text block (+ optional metadata) to a Notion page */
@@ -194,8 +171,7 @@ export async function createPageInDatabase(
   
   if (!res.ok) {
     const err = await res.json() as { message?: string; code?: string }
-    console.error('Database save failed:', { status: res.status, error: err })
-    // Provide user-friendly error message
+      // Provide user-friendly error message
     if (err.code === 'validation_error' || err.message?.includes('required')) {
       throw new Error('This database has required properties that cannot be auto-filled. Please use a simpler database or create pages manually.')
     }
@@ -286,6 +262,8 @@ interface NotionAPIPage {
     emoji?: string
     external?: { url: string }
     file?: { url: string; expiry_time?: string }
+    custom_emoji?: { id: string; name: string; url: string }
+    icon?: { name: string; color: string }
   }
   properties?: {
     title?: { title: Array<{ plain_text: string }> }
@@ -296,11 +274,22 @@ interface NotionAPIPage {
 
 function pageFromAPI(page: NotionAPIPage): NotionPage {
   const iconType = page.icon?.type
-  const emoji = iconType === "emoji" ? (page.icon?.emoji ?? "📄") : "📄"
-  // Only use external URLs — file-type icons are signed S3 URLs that expire
-  const iconUrl =
-    iconType === "external" ? page.icon?.external?.url
-    : undefined
+  let emoji = "📄"
+  let iconUrl: string | undefined
+
+  if (iconType === "emoji") {
+    emoji = page.icon?.emoji ?? "📄"
+  } else if (iconType === "external") {
+    iconUrl = page.icon?.external?.url
+  } else if (iconType === "file") {
+    iconUrl = page.icon?.file?.url
+  } else if (iconType === "custom_emoji") {
+    iconUrl = page.icon?.custom_emoji?.url
+  } else if (iconType === "icon") {
+    const name = page.icon?.icon?.name
+    const color = page.icon?.icon?.color || 'gray'
+    if (name) iconUrl = `https://www.notion.so/icons/${name}_${color}.svg`
+  }
   
   // Get title array - databases have it directly, pages have it in properties
   let titleArr: Array<{ plain_text: string }> = []
@@ -314,8 +303,8 @@ function pageFromAPI(page: NotionAPIPage): NotionPage {
   
   // Ensure titleArr is an array before mapping
   const name = Array.isArray(titleArr) 
-    ? titleArr.map((t) => t.plain_text).join("") || "Untitled"
-    : "Untitled"
+    ? titleArr.map((t) => t.plain_text).join("")
+    : ""
   
   const type = page.object === 'database' ? 'database' : 'page'
   return { id: page.id, emoji, iconUrl, name, type }

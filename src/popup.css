@@ -8,3 +8,11 @@ html, body {
   background: transparent;
   min-width: 320px;
 }
+
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+a:focus {
+  outline: none;
+}
